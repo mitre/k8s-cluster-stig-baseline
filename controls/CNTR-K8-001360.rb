@@ -5,7 +5,7 @@ control 'CNTR-K8-001360' do
   desc  "Separating user functionality from management functionality is a
 requirement for all the components within the Kubernetes Control Plane. Without
 the separation, users may have access to management functions that can degrade
-the Kubernetes architecture and the services being offered ,and can offer a
+the Kubernetes architecture and the services being offered, and can offer a
 method to bypass testing and validation of functions before introduced into a
 production environment."
   desc  'rationale', ''
@@ -31,5 +31,9 @@ namespaces to user specific namespaces."
   tag fix_id: 'F-CNTR-K8-001360_fix'
   tag cci: ['CCI-001082']
   tag nist: ['SC-2']
+
+  describe "Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces" do
+    skip
+  end
 end
 

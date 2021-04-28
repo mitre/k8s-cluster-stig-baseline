@@ -28,8 +28,7 @@ node, run the following command:
 the command:
 
     kubectl delete pod podname
-
-    Where podname is the name of the pod to delete.
+    (Note: \"podname\" is the name of the pod to delete.)
   "
   impact 0.5
   tag severity: 'medium'
@@ -40,5 +39,32 @@ the command:
   tag fix_id: 'F-CNTR-K8-002700_fix'
   tag cci: ['CCI-002617']
   tag nist: ['SI-2 (6)']
-end
 
+  images = []
+  k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
+    images << k8sobject(api: 'v1', type: 'pods' ,name: entry.name, namespace: entry.namespace).container_images
+  end
+
+  # remove duplicate image references
+  images = images.flatten.uniq
+
+  # tally up versions by image name
+  image_tally = {}
+  images.each do |image|
+      image_name, image_version = image.split(':', 2)
+      image_version = 'latest' if image_version.nil?
+
+     if image_tally[image_name]
+        image_tally[image_name] << image_version
+     else
+        image_tally[image_name] = [ image_version ]
+     end
+  end
+
+  image_tally.each do |image_name, versions|
+    describe "Image #{image_name}; versions #{versions} count" do
+      subject { versions.length } 
+      it { should_not cmp > 1}
+    end
+  end
+end

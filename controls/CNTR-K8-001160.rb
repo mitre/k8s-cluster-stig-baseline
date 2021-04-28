@@ -18,9 +18,9 @@ must be mounted from files or stored within password vaults."
     If any of the values returned reference environment variables, this is a
 finding.
   "
-  desc  'fix', "Any secrets stored as environment variables must be moved to be
-secret files with the proper protections and enforcements or placed within a
-password vault."
+  desc  'fix', "Any secrets stored as environment variables must be moved to
+the secret files with the proper protections and enforcements or placed within
+a password vault."
   impact 0.7
   tag severity: 'high'
   tag gtitle: 'SRG-APP-000171-CTR-000435'
@@ -30,5 +30,17 @@ password vault."
   tag fix_id: 'F-CNTR-K8-001160_fix'
   tag cci: ['CCI-000196']
   tag nist: ['IA-5 (1) (c)']
+
+  k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
+    describe k8sobject(api: 'v1', type: 'pods' ,name: entry.name, namespace: entry.namespace) do
+      its('k8sobject.spec.to_s') { should_not match 'secretKeyRef'}
+    end
+  end
+
+  if k8sobjects(api: 'v1', type: 'pods').entries.empty?
+    describe "No pods found in the cluster" do 
+      skip
+    end
+  end
 end
 

@@ -21,13 +21,12 @@ kube-system, kube-node-lease and kube-public), run the command:
 
     kubectl get pod podname -o yaml | grep -i port
 
-    Note: In the above command, “podname” is the name of the pod. For the
+    Note: In the above command, \"podname\" is the name of the pod. For the
 command to work correctly, the current context must be changed to the namespace
 for the pod. The command to do this is:
 
     kubectl config set-context --current --namespace=namespace-name
-
-    where namespace-name is the name of the namespace.
+    (Note: \"namespace-name\" is the name of the namespace.)
 
     Review the ports that are returned for the pod.
 
@@ -46,5 +45,32 @@ pod port or reconfigure the image to use non-privileged ports."
   tag fix_id: 'F-CNTR-K8-000960_fix'
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
-end
 
+  userspace_ports_found = []
+
+  # List pods not in system namespaces
+  k8sobjects(api: 'v1', type: 'pods').where{ namespace != 'kube-system' && namespace != 'kube-node-lease' && namespace != 'kube-public' }.entries.each do |entry|
+    # List containers in each pod found
+    k8sobject(api: 'v1', type: 'pods' ,name: entry.name, namespace: entry.namespace).k8sobject.spec.containers.each do |container|
+      # Inspect any port mapped on each container
+      unless container.ports.nil? || container.ports.empty?
+        container.ports.each do |port|
+          # Tally up ports found
+          userspace_ports_found << port.containerPort
+          describe "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} containerPort: #{port.containerPort}" do
+            subject { port.containerPort }
+            it { should cmp > 1024}
+          end
+        end
+      end
+    end
+  end
+
+  # Pass if no container ports are mapped in user namespaces
+  if userspace_ports_found.empty?
+    describe "Ports mapping found in pods in the user namespaces" do 
+      subject { userspace_ports_found }
+      it { should be_empty }
+    end
+  end
+end

@@ -57,5 +57,9 @@ applied within the time allowed."
   tag fix_id: 'F-CNTR-K8-002720_fix'
   tag cci: ['CCI-002605']
   tag nist: ['SI-2 c']
+
+  describe k8sversion do
+    its('gitVersion') { should cmp >= input('k8s_minium_version') }
+  end
 end
 

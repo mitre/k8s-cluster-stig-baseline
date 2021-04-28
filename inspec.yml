@@ -9,7 +9,13 @@ inspec_version: ">= 4.0"
 supports:
 - platform: k8s
 
-
 depends:
 - name: inspec-k8s
   url: https://github.com/bgeesaman/inspec-k8s/archive/0.1.3.tar.gz
+
+inputs:
+  - name: k8s_minium_version
+    description: 'Minimum version of Kubernetes deployment'
+    type: string
+    value: 'v1.19.5'
+    required: true

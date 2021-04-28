@@ -5,9 +5,9 @@ control 'CNTR-K8-000420' do
   desc  "While the Kubernetes dashboard is not inherently insecure on its own,
 it is often coupled with a misconfiguration of Role-Based Access control (RBAC)
 permissions that can unintentionally over-grant access. It is not commonly
-protected with “NetworkPolicies”, preventing all pods from being able to reach
-it. In increasingly rare circumstances, the Kubernetes dashboard is exposed
-publicly to the internet."
+protected with \"NetworkPolicies\", preventing all pods from being able to
+reach it. In increasingly rare circumstances, the Kubernetes dashboard is
+exposed publicly to the internet."
   desc  'rationale', ''
   desc  'check', "
     From the master node, run the command:
@@ -23,12 +23,15 @@ publicly to the internet."
   "
   impact 0.5
   tag severity: 'medium'
-  tag gtitle: 'SRG-APP-000033-CTR-00095'
+  tag gtitle: 'SRG-APP-000033-CTR-000095'
   tag gid: 'CNTR-K8-000420'
   tag rid: 'CNTR-K8-000420_rule'
   tag stig_id: 'CNTR-K8-000420'
   tag fix_id: 'F-CNTR-K8-000420_fix'
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
-end
 
+  describe k8sobjects(api: 'v1', type: 'pods',labelSelector: 'k8s-app=kubernetes-dashboard') do
+    it { should_not exist }
+  end
+end

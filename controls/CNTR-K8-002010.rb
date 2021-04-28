@@ -3,7 +3,7 @@
 control 'CNTR-K8-002010' do
   title 'Kubernetes must have a pod security policy set.'
   desc  "Enabling the admissions webhook allows for Kubernetes to apply
-policies against objects that are to be created, read, updated or deleted. By
+policies against objects that are to be created, read, updated, or deleted. By
 applying a pod security policy, control can be given to not allow images to be
 instantiated that run as the root user. If pods run as the root user, the pod
 then has root privileges to the host system and all the resources it has. An
@@ -16,23 +16,25 @@ in what the pod can do and access."
 
     kubectl get podsecuritypolicy
 
+    If there is no pod security policy configured, this is a finding.
+
     For any pod security policies listed, edit the policy with the command:
 
     kubectl edit podsecuritypolicy policyname
-    Where policyname is the name of the policy
+    (Note: \"policyname\" is the name of the policy.)
 
     Review the runAsUser, supplementalGroups and fsGroup sections of the policy.
 
     If any of these sections are missing, this is a finding.
 
-    If the rule within the runAsUser section is not set to “MustRunAsNonRoot”,
-this is a finding.
+    If the rule within the runAsUser section is not set to
+\"MustRunAsNonRoot\", this is a finding.
 
-    If the ranges within the supplementalGroups section has min set to “0” or
+    If the ranges within the supplementalGroups section has min set to \"0\" or
 min is missing, this is a finding.
 
-    If the ranges within the fsGroup section has a min set to “0” or the min is
-missing, this is a finding.
+    If the ranges within the fsGroup section has a min set to \"0\" or the min
+is missing, this is a finding.
   "
   desc  'fix', "
     From the Master node, save the following policy to a file called
@@ -96,8 +98,8 @@ use.
 
     kubectl create -f restricted.yml
   "
-  impact 0.5
-  tag severity: 'medium'
+  impact 0.7
+  tag severity: 'high'
   tag gtitle: 'SRG-APP-000342-CTR-000775'
   tag gid: 'CNTR-K8-002010'
   tag rid: 'CNTR-K8-002010_rule'
@@ -105,5 +107,31 @@ use.
   tag fix_id: 'F-CNTR-K8-002010_fix'
   tag cci: ['CCI-002233']
   tag nist: ['AC-6 (8)']
+
+  pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
+
+  describe pod_security_policies do
+    it { should exist }
+  end
+
+  pod_security_policies.entries.each do | policy |
+    policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name )
+
+    describe policy_object do
+      its ('item.spec.runAsUser.rule') { should cmp 'MustRunAsNonRoot' }
+    end
+
+    describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
+      subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+      it { should_not be_empty }
+      it { should_not include 0 }
+    end
+
+    describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
+      subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+      it { should_not be_empty }
+      it { should_not include 0 }
+    end
+  end
 end
 

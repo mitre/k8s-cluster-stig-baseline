@@ -1,13 +1,13 @@
 # encoding: UTF-8
 
 control 'CNTR-K8-000290' do
-  title 'User managed resources must be created in dedicated namespaces.'
+  title 'User-managed resources must be created in dedicated namespaces.'
   desc  "Creating namespaces for user-managed resources is important when
-implementing Role-Based Access controls (RBAC). RBAC allows for the
+implementing Role-Based Access Controls (RBAC). RBAC allows for the
 authorization of users and helps support proper API server permissions
 separation and network micro segmentation. If user-managed resources are placed
 within the default namespaces, it becomes impossible to implement policies for
-RBAC permission, service account usage, network policies and more."
+RBAC permission, service account usage, network policies, and more."
   desc  'rationale', ''
   desc  'check', "
     To view the available namespaces, run the command:
@@ -49,5 +49,20 @@ and kube-node-lease namespaces, to user namespaces."
   tag fix_id: 'F-CNTR-K8-000290_fix'
   tag cci: ['CCI-000366']
   tag nist: ['CM-6 b']
-end
 
+  approved_services = ['kubernetes']
+  namespaces = ['default', 'kube-public', 'kube-node-lease']
+
+  namespaces.each do |namespace|
+    describe k8sobjects(api: 'v1', type: 'services',namespace: namespace) do
+      its('name') { should be_in approved_services }
+    end
+  end
+
+  namespaces.each do |namespace|
+    describe "Pods in namespace: #{namespace}" do
+      subject { k8sobjects(api: 'v1', type: 'pods',namespace: namespace) }
+      it { should_not exist }
+    end
+  end
+end
