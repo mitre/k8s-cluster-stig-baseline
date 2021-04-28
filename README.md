@@ -1,4 +1,4 @@
-## Kubernetes Cluster Automated Compliance Validation Profile
+## Kubernetes Cluster STIG Automated Compliance Validation Profile
 
 <b>Kubernetes Cluster</b> STIG Automated Compliance Validation Profile works with Chef InSpec to perform automated compliance checks of <b>Kubernetes Cluster</b>. It is to be used in conjunction with <b>[Kubernetes Node](https://gitlab.dsolab.io/scv-content/inspec/kubernetes/k8s-node-stig-baseline)</b>  profile that validates perform automated compliance checks of <b>Kubernetes Nodes</b>
 
