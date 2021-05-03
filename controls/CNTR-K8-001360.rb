@@ -20,7 +20,7 @@ namespaces are kube-node-lease, kube-public, and kube-system.
     If any user pods are present in the Kubernetes system namespaces, this is a
 finding.
   "
-  desc  'fix', "Move any user pods that are present in the Kubernetes system
+  desc 'fix', "Move any user pods that are present in the Kubernetes system
 namespaces to user specific namespaces."
   impact 0.5
   tag severity: 'medium'
@@ -32,8 +32,7 @@ namespaces to user specific namespaces."
   tag cci: ['CCI-001082']
   tag nist: ['SC-2']
 
-  describe "Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces" do
+  describe 'Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces' do
     skip
   end
 end
-

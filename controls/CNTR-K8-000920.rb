@@ -45,7 +45,7 @@ system documentation is a finding.
 Assurance Categories. Any PPS not in compliance with the CAL Assurance Category
 requirements is a finding.
   "
-  desc  'fix', "Amend any system documentation requiring revision. Update
+  desc 'fix', "Amend any system documentation requiring revision. Update
 Kubernetes API Server manifest and namespace PPS configuration to comply with
 PPSM CAL."
   impact 0.5
@@ -64,4 +64,3 @@ PPSM CAL."
     skip
   end
 end
-

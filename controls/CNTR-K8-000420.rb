@@ -16,7 +16,7 @@ exposed publicly to the internet."
 
     If any resources are returned, this is a finding.
   "
-  desc  'fix', "
+  desc 'fix', "
     Delete the Kubernetes dashboard deployment with the following command:
 
     kubectl delete deployment kubernetes-dashboard --namespace=kube-system
@@ -31,7 +31,7 @@ exposed publicly to the internet."
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
-  describe k8sobjects(api: 'v1', type: 'pods',labelSelector: 'k8s-app=kubernetes-dashboard') do
+  describe k8sobjects(api: 'v1', type: 'pods', labelSelector: 'k8s-app=kubernetes-dashboard') do
     it { should_not exist }
   end
 end

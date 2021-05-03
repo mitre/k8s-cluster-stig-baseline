@@ -36,7 +36,7 @@ min is missing, this is a finding.
     If the ranges within the fsGroup section has a min set to \"0\" or the min
 is missing, this is a finding.
   "
-  desc  'fix', "
+  desc 'fix', "
     From the Master node, save the following policy to a file called
 restricted.yml.
 
@@ -114,8 +114,8 @@ use.
     it { should exist }
   end
 
-  pod_security_policies.entries.each do | policy |
-    policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name )
+  pod_security_policies.entries.each do |policy|
+    policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
 
     describe policy_object do
       its ('item.spec.runAsUser.rule') { should cmp 'MustRunAsNonRoot' }
@@ -134,4 +134,3 @@ use.
     end
   end
 end
-

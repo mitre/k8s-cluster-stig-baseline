@@ -38,7 +38,7 @@ service/kubernetes) and nothing at all.
     If a return value is returned from the \"kubectl get all\" command and it
 is not the kubernetes service (i.e., service/kubernetes), this is a finding.
   "
-  desc  'fix', "Move any user-managed resources from the default, kube-public
+  desc 'fix', "Move any user-managed resources from the default, kube-public
 and kube-node-lease namespaces, to user namespaces."
   impact 0.7
   tag severity: 'high'
@@ -54,14 +54,14 @@ and kube-node-lease namespaces, to user namespaces."
   namespaces = ['default', 'kube-public', 'kube-node-lease']
 
   namespaces.each do |namespace|
-    describe k8sobjects(api: 'v1', type: 'services',namespace: namespace) do
+    describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do
       its('name') { should be_in approved_services }
     end
   end
 
   namespaces.each do |namespace|
     describe "Pods in namespace: #{namespace}" do
-      subject { k8sobjects(api: 'v1', type: 'pods',namespace: namespace) }
+      subject { k8sobjects(api: 'v1', type: 'pods', namespace: namespace) }
       it { should_not exist }
     end
   end

@@ -45,7 +45,7 @@ this is a finding.
     Note: Kubernetes Skew Policy can be found at:
 https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-versions
   "
-  desc  'fix', "Upgrade Kubernetes to the supported version. Institute and
+  desc 'fix', "Upgrade Kubernetes to the supported version. Institute and
 adhere to the policies and procedures to ensure that patches are consistently
 applied within the time allowed."
   impact 0.5
@@ -62,4 +62,3 @@ applied within the time allowed."
     its('gitVersion') { should cmp >= input('k8s_minium_version') }
   end
 end
-

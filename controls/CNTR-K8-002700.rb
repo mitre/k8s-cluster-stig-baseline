@@ -23,7 +23,7 @@ node, run the following command:
 
     If there are multiple versions of the same image, this is a finding.
   "
-  desc  'fix', "
+  desc 'fix', "
     Remove any old pods that are using older images. On the Master node, run
 the command:
 
@@ -42,7 +42,7 @@ the command:
 
   images = []
   k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
-    images << k8sobject(api: 'v1', type: 'pods' ,name: entry.name, namespace: entry.namespace).container_images
+    images << k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).container_images
   end
 
   # remove duplicate image references
@@ -51,20 +51,20 @@ the command:
   # tally up versions by image name
   image_tally = {}
   images.each do |image|
-      image_name, image_version = image.split(':', 2)
-      image_version = 'latest' if image_version.nil?
+    image_name, image_version = image.split(':', 2)
+    image_version = 'latest' if image_version.nil?
 
-     if image_tally[image_name]
-        image_tally[image_name] << image_version
-     else
-        image_tally[image_name] = [ image_version ]
-     end
+    if image_tally[image_name]
+      image_tally[image_name] << image_version
+    else
+      image_tally[image_name] = [ image_version ]
+    end
   end
 
   image_tally.each do |image_name, versions|
     describe "Image #{image_name}; versions #{versions} count" do
-      subject { versions.length } 
-      it { should_not cmp > 1}
+      subject { versions.length }
+      it { should_not cmp > 1 }
     end
   end
 end
