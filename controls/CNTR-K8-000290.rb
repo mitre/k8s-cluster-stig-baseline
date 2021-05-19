@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-000290' do
+control 'V-242383' do
   title 'User-managed resources must be created in dedicated namespaces.'
   desc  "Creating namespaces for user-managed resources is important when
 implementing Role-Based Access Controls (RBAC). RBAC allows for the
@@ -43,10 +43,10 @@ and kube-node-lease namespaces, to user namespaces."
   impact 0.7
   tag severity: 'high'
   tag gtitle: 'SRG-APP-000038-CTR-000105'
-  tag gid: 'CNTR-K8-000290'
-  tag rid: 'CNTR-K8-000290_rule'
+  tag gid: 'V-242383'
+  tag rid: 'SV-242383r712505_rule'
   tag stig_id: 'CNTR-K8-000290'
-  tag fix_id: 'F-CNTR-K8-000290_fix'
+  tag fix_id: 'F-45616r712504_fix'
   tag cci: ['CCI-000366']
   tag nist: ['CM-6 b']
 

@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-001160' do
+control 'V-242415' do
   title 'Secrets in Kubernetes must not be stored as environment variables.'
   desc  "Secrets, such as passwords, keys, tokens, and certificates should not
 be stored as environment variables. These environment variables are accessible
@@ -24,10 +24,10 @@ a password vault."
   impact 0.7
   tag severity: 'high'
   tag gtitle: 'SRG-APP-000171-CTR-000435'
-  tag gid: 'CNTR-K8-001160'
-  tag rid: 'CNTR-K8-001160_rule'
+  tag gid: 'V-242415'
+  tag rid: 'SV-242415r712601_rule'
   tag stig_id: 'CNTR-K8-001160'
-  tag fix_id: 'F-CNTR-K8-001160_fix'
+  tag fix_id: 'F-45648r712600_fix'
   tag cci: ['CCI-000196']
   tag nist: ['IA-5 (1) (c)']
 

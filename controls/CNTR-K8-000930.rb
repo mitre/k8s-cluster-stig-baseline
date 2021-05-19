@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-000930' do
+control 'V-242411' do
   title "The Kubernetes Scheduler must enforce ports, protocols, and services
 (PPS) that adhere to the Ports, Protocols, and Services Management Category
 Assurance List (PPSM CAL)."
@@ -50,10 +50,10 @@ the PPSM CAL."
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000142-CTR-000325'
-  tag gid: 'CNTR-K8-000930'
-  tag rid: 'CNTR-K8-000930_rule'
+  tag gid: 'V-242411'
+  tag rid: 'SV-242411r712589_rule'
   tag stig_id: 'CNTR-K8-000930'
-  tag fix_id: 'F-CNTR-K8-000930_fix'
+  tag fix_id: 'F-45644r712588_fix'
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 

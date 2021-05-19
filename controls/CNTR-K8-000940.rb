@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-000940' do
+control 'V-242412' do
   title "The Kubernetes Controllers must enforce ports, protocols, and services
 (PPS) that adhere to the Ports, Protocols, and Services Management Category
 Assurance List (PPSM CAL)."
@@ -50,10 +50,10 @@ PPSM CAL."
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000142-CTR-000330'
-  tag gid: 'CNTR-K8-000940'
-  tag rid: 'CNTR-K8-000940_rule'
+  tag gid: 'V-242412'
+  tag rid: 'SV-242412r712592_rule'
   tag stig_id: 'CNTR-K8-000940'
-  tag fix_id: 'F-CNTR-K8-000940_fix'
+  tag fix_id: 'F-45645r712591_fix'
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 

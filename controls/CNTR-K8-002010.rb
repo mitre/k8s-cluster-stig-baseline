@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-002010' do
+control 'V-242437' do
   title 'Kubernetes must have a pod security policy set.'
   desc  "Enabling the admissions webhook allows for Kubernetes to apply
 policies against objects that are to be created, read, updated, or deleted. By
@@ -46,7 +46,7 @@ restricted.yml.
       name: restricted
       annotations:
         seccomp.security.alpha.kubernetes.io/allowedProfileNames:
-'docker/default,runtime/default'
+'docker/default,
         apparmor.security.beta.kubernetes.io/allowedProfileNames:
 'runtime/default'
         seccomp.security.alpha.kubernetes.io/defaultProfileName:
@@ -101,10 +101,10 @@ use.
   impact 0.7
   tag severity: 'high'
   tag gtitle: 'SRG-APP-000342-CTR-000775'
-  tag gid: 'CNTR-K8-002010'
-  tag rid: 'CNTR-K8-002010_rule'
+  tag gid: 'V-242437'
+  tag rid: 'SV-242437r712667_rule'
   tag stig_id: 'CNTR-K8-002010'
-  tag fix_id: 'F-CNTR-K8-002010_fix'
+  tag fix_id: 'F-45670r717028_fix'
   tag cci: ['CCI-002233']
   tag nist: ['AC-6 (8)']
 

@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-002720' do
+control 'V-242443' do
   title "Kubernetes must contain the latest updates as authorized by IAVMs,
 CTOs, DTMs, and STIGs."
   desc  "Kubernetes software must stay up to date with the latest patches,
@@ -51,10 +51,10 @@ applied within the time allowed."
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000456-CTR-001125'
-  tag gid: 'CNTR-K8-002720'
-  tag rid: 'CNTR-K8-002720_rule'
+  tag gid: 'V-242443'
+  tag rid: 'SV-242443r712685_rule'
   tag stig_id: 'CNTR-K8-002720'
-  tag fix_id: 'F-CNTR-K8-002720_fix'
+  tag fix_id: 'F-45676r712684_fix'
   tag cci: ['CCI-002605']
   tag nist: ['SI-2 c']
 

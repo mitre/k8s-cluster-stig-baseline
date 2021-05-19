@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-001360' do
+control 'V-242417' do
   title 'Kubernetes must separate user functionality.'
   desc  "Separating user functionality from management functionality is a
 requirement for all the components within the Kubernetes Control Plane. Without
@@ -25,10 +25,10 @@ namespaces to user specific namespaces."
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000211-CTR-000530'
-  tag gid: 'CNTR-K8-001360'
-  tag rid: 'CNTR-K8-001360_rule'
+  tag gid: 'V-242417'
+  tag rid: 'SV-242417r712607_rule'
   tag stig_id: 'CNTR-K8-001360'
-  tag fix_id: 'F-CNTR-K8-001360_fix'
+  tag fix_id: 'F-45650r712606_fix'
   tag cci: ['CCI-001082']
   tag nist: ['SC-2']
 

@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-002700' do
+control 'V-242442' do
   title "Kubernetes must remove old components after updated versions have been
 installed."
   desc  "Previous versions of Kubernetes components that are not removed after
@@ -33,10 +33,10 @@ the command:
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000454-CTR-001110'
-  tag gid: 'CNTR-K8-002700'
-  tag rid: 'CNTR-K8-002700_rule'
+  tag gid: 'V-242442'
+  tag rid: 'SV-242442r712682_rule'
   tag stig_id: 'CNTR-K8-002700'
-  tag fix_id: 'F-CNTR-K8-002700_fix'
+  tag fix_id: 'F-45675r712681_fix'
   tag cci: ['CCI-002617']
   tag nist: ['SI-2 (6)']
 

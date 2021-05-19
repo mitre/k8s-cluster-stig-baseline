@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-control 'CNTR-K8-000420' do
+control 'V-242395' do
   title 'Kubernetes dashboard must not be enabled.'
   desc  "While the Kubernetes dashboard is not inherently insecure on its own,
 it is often coupled with a misconfiguration of Role-Based Access control (RBAC)
@@ -24,10 +24,10 @@ exposed publicly to the internet."
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000033-CTR-000095'
-  tag gid: 'CNTR-K8-000420'
-  tag rid: 'CNTR-K8-000420_rule'
+  tag gid: 'V-242395'
+  tag rid: 'SV-242395r712541_rule'
   tag stig_id: 'CNTR-K8-000420'
-  tag fix_id: 'F-CNTR-K8-000420_fix'
+  tag fix_id: 'F-45628r712540_fix'
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
