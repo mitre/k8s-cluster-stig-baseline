@@ -50,7 +50,7 @@ inspec --version
 ```
 
 #### Install InSpec Kubernetes Train
-kubernetes Train allows inspec to send request over Kubernetes API to inspect the kubernetes Cluster.
+Kubernetes Train allows inspec to send request over Kubernetes API to inspect the kubernetes Cluster.
 ```sh
 # if ruby > 2.4 installed run
 gem install train-kubernetes -v 0.1.6
@@ -70,7 +70,7 @@ inspec plugin list
 ### How to execute this instance  
 (See: https://www.inspec.io/docs/reference/cli/)
 
-#### Validate access to kubernetes API
+#### Validate access to Kubernetes API
 ```sh
 kubectl get nodes
 
