@@ -59,7 +59,7 @@ inspec plugin install train-kubernetes
 vi ~/.inspec/plugins.json
 
 # Run the following command to confirm train-kubernates is installed
-inspec plugins list
+inspec plugin list
 ```
 ### How to execute this instance  
 (See: https://www.inspec.io/docs/reference/cli/)
