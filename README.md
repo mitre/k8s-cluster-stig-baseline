@@ -102,11 +102,11 @@ These checks are not included in the automation process.
 
 | Check Number | Description                                                                                                                                                                                                                                                                                 |
 |--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| CNTR-K8-000920 | The Kubernetes API Server must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL). |
-| CNTR-K8-000930 | The Kubernetes Scheduler must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL).|
-| CNTR-K8-000940 | The Kubernetes Controllers must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL). |
-| CNTR-K8-000950 | The Kubernetes etcd must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL). |
-| CNTR-K8-001360 | Kubernetes must separate user functionality. |
+|V-242410| The Kubernetes API Server must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL).|
+|V-242411| The Kubernetes Scheduler must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL).|
+|V-242412| The Kubernetes Controllers must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL).|
+|V-242413| The Kubernetes etcd must enforce ports, protocols, and services (PPS) that adhere to the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL).|
+|V-242417| Kubernetes must separate user functionality.|
 
 
 **Normal Checks**
@@ -115,13 +115,13 @@ These checks will follow the normal automation process and will report accurate 
 
 | Check Number | Description                                                                                                                                                                                                               |
 |--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|CNTR-K8-000290| User-managed resources must be created in dedicated namespaces.|
-|CNTR-K8-000420| Kubernetes dashboard must not be enabled.|
-|CNTR-K8-000960| The Kubernetes cluster must use non-privileged host ports for user pods.|
-|CNTR-K8-001160| Secrets in Kubernetes must not be stored as environment variables.|
-|CNTR-K8-002010| Kubernetes must have a pod security policy set.|
-|CNTR-K8-002700| Kubernetes must remove old components after updated versions have been installed.|
-|CNTR-K8-002720| Kubernetes must contain the latest updates as authorized by IAVMs, CTOs, DTMs, and STIGs.|
+|V-242383| User-managed resources must be created in dedicated namespaces.|
+|V-242395| Kubernetes dashboard must not be enabled.|
+|V-242414| The Kubernetes cluster must use non-privileged host ports for user  pods.|
+|V-242415| Secrets in Kubernetes must not be stored as environment variables.|
+|V-242437| Kubernetes must have a pod security policy set.|
+|V-242442| Kubernetes must remove old components after updated versions have been installed.|
+|V-242443| Kubernetes must contain the latest updates as authorized by IAVMs, CTOs, DTMs, and STIGs.|
 
 ## Authors
 
