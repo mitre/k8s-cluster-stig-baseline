@@ -49,22 +49,28 @@ Goto https://www.inspec.io/downloads/ and consult the documentation for your Ope
 inspec --version
 ```
 
-#### Install InSpec Kubernates Train
-Kubernates Train allows inspec to send request over Kubernates API to inspect the Kubernates Cluster.
+#### Install InSpec Kubernetes Train
+kubernetes Train allows inspec to send request over Kubernetes API to inspect the kubernetes Cluster.
 ```sh
-gem install train-kubernetes
+# if ruby > 2.4 installed run
+gem install train-kubernetes -v 0.1.6
+
+# if Ruby > 2.4 not installed
+sudo /opt/inspec/embedded/bin/gem install train-kubernetes -v 0.1.6
+
+# Import gem as InSpec plugin
 inspec plugin install train-kubernetes
 
 #If it has the version set to "= 0.1.6", modify it to "0.1.6" and save the file.
 vi ~/.inspec/plugins.json
 
-# Run the following command to confirm train-kubernates is installed
+# Run the following command to confirm train-kubernetes is installed
 inspec plugin list
 ```
 ### How to execute this instance  
 (See: https://www.inspec.io/docs/reference/cli/)
 
-#### Validate access to Kubernates API
+#### Validate access to kubernetes API
 ```sh
 kubectl get nodes
 
