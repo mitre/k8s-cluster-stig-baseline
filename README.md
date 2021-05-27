@@ -52,7 +52,7 @@ inspec --version
 #### Install InSpec Kubernetes Train
 Kubernetes Train allows inspec to send request over Kubernetes API to inspect the kubernetes Cluster.
 ```sh
-# if ruby > 2.4 installed run
+# if ruby > 2.4 installed run <--- NEED TO UPDATE THIS GUIDANCE TO REFLECT THE DIFFERENT STEPS WHEN INSTALL AS A GEM VS INSTALL PACAKGE
 gem install train-kubernetes -v 0.1.6
 
 # if Ruby > 2.4 not installed
