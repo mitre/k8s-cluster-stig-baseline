@@ -31,7 +31,8 @@ exposed publicly to the internet."
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
-  describe k8sobjects(api: 'v1', type: 'pods', labelSelector: 'k8s-app=kubernetes-dashboard') do
+  describe "Kubernetes Dashboard resources" do
+    subject { k8sobjects(api: 'v1', type: 'pods', labelSelector: 'k8s-app=kubernetes-dashboard') } 
     it { should_not exist }
   end
 end
