@@ -50,13 +50,16 @@ inspec --version
 ```
 
 #### Install InSpec Kubernetes Train
-Kubernetes Train allows inspec to send request over Kubernetes API to inspect the kubernetes Cluster.
+Kubernetes Train allows InSpec to send request over Kubernetes API to inspect the Kubernetes Cluster.
+
 ```sh
-# if InSpec was installed as a gem use the system gem binary to install train-kubernetes.
+# Use one of the two following approaches for installing train-kubernetes.
+
+# if InSpec was installed as a gem, use the system gem binary to install train-kubernetes.
 # to check, compare `which inspec` to $GEM_HOME, if they match use
 gem install train-kubernetes -v 0.1.6
 
-# if InSpec was installed as a package use the embedded gem binary to install train-kubernetes.
+# if InSpec was installed as a package, use the embedded gem binary to install train-kubernetes.
 # to check, compare `which inspec` to $GEM_HOME, if they do not match or if $GEM_HOME is null use
 sudo /opt/inspec/embedded/bin/gem install train-kubernetes -v 0.1.6
 
