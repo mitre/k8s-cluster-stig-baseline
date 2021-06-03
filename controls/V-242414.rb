@@ -60,7 +60,7 @@ pod port or reconfigure the image to use non-privileged ports."
         userspace_ports_found << port.hostPort
         describe "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} hostPort: #{port.hostPort}" do
           subject { port.hostPort }
-          it { should cmp > 1024 }
+          it { should cmp >= 1024 }
         end
       end
     end
