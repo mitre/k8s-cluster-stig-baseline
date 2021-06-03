@@ -110,8 +110,8 @@ use.
 
   pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
 
-  describe "Pod Security Policies"
-    subject { pod_security_policies } do
+  describe 'Pod Security Policies' do
+    subject { pod_security_policies }
     it { should exist }
   end
 
