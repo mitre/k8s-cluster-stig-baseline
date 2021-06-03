@@ -123,7 +123,7 @@ use.
     end
 
     describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
-      subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+      subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
       it { should_not be_empty }
       it { should_not include 0 }
     end
