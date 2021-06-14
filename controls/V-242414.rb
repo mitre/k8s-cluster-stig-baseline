@@ -53,14 +53,14 @@ pod port or reconfigure the image to use non-privileged ports."
     # List containers in each pod found
     k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).k8sobject.spec.containers.each do |container|
       # Inspect any port mapped on each container
-      unless container.ports.nil? || container.ports.empty?
-        container.ports.each do |port|
-          # Tally up ports found
-          userspace_ports_found << port.containerPort
-          describe "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} containerPort: #{port.containerPort}" do
-            subject { port.containerPort }
-            it { should cmp > 1024}
-          end
+      next if container.ports.nil? || container.ports.empty?
+      container.ports.each do |port|
+        next if port.hostPort.nil?
+        # Tally up ports found
+        userspace_ports_found << port.hostPort
+        describe "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} hostPort: #{port.hostPort}" do
+          subject { port.hostPort }
+          it { should cmp >= 1024 }
         end
       end
     end
@@ -68,7 +68,7 @@ pod port or reconfigure the image to use non-privileged ports."
 
   # Pass if no container ports are mapped in user namespaces
   if userspace_ports_found.empty?
-    describe 'Ports mapping found in pods in the user namespaces' do
+    describe 'Host port mapping found in pods in the user namespaces' do
       subject { userspace_ports_found }
       it { should be_empty }
     end

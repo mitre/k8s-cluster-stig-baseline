@@ -110,7 +110,8 @@ use.
 
   pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
 
-  describe pod_security_policies do
+  describe 'Pod Security Policies' do
+    subject { pod_security_policies }
     it { should exist }
   end
 
@@ -122,7 +123,7 @@ use.
     end
 
     describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
-      subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+      subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
       it { should_not be_empty }
       it { should_not include 0 }
     end
