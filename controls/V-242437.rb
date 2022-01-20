@@ -122,16 +122,30 @@ use.
       its ('item.spec.runAsUser.rule') { should cmp 'MustRunAsNonRoot' }
     end
 
-    describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
-      subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
-      it { should_not be_empty }
-      it { should_not include 0 }
+    describe "Pod security: #{policy.name}; Policy fsGroup ranges" do
+      subject { policy_object.item.spec.fsGroup.ranges }
+      it { should_not be_nil }
     end
 
-    describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
-      subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
-      it { should_not be_empty }
-      it { should_not include 0 }
+    unless policy_object.item.spec.fsGroup.ranges.nil?
+      describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
+        subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
+        it { should_not be_empty }
+        it { should_not include 0 }
+      end
+    end
+
+    describe "Pod security: #{policy.name}; Policy supplementalGroups ranges" do
+      subject { policy_object.item.spec.supplementalGroups.ranges }
+      it { should_not be_nil }
+    end
+
+    unless policy_object.item.spec.supplementalGroups.ranges.nil?
+      describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
+        subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+        it { should_not be_empty }
+        it { should_not include 0 }
+      end
     end
   end
 end
