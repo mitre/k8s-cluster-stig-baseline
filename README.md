@@ -22,7 +22,8 @@ While the Kubernetes STIG automation profile check was developed to provide tech
 ### Update History 
 | Guidance Name  | Guidance Version | Guidance Location                            | Profile Version | Profile Release Date | STIG EOL    | Profile EOL |
 |---------------------------------------|------------------|--------------------------------------------|-----------------|----------------------|-------------|-------------|
-| Kubernetes STIG  | v1r1 | https://public.cyber.mil/stigs/downloads/  |         1.0.0          |                   | NA | NA |
+| Kubernetes STIG  | v1r1 | https://public.cyber.mil/stigs/downloads/  |         1.0.0          |      06/16/2021             | NA | NA |
+| Kubernetes STIG  | v1r1 | https://public.cyber.mil/stigs/downloads/  |         1.0.1          |      01/20/2022         | NA | NA |
 
 
 ## Getting Started
