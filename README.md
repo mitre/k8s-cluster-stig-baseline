@@ -9,7 +9,7 @@ __For the best security of the runner, always install on the runner the _latest 
 
 Latest versions and installation options are available at the [InSpec](http://inspec.io/) site.
 
-The Kubernetes STIG includes security requirements for both the Kubernetes cluster itself and the nodes that comprise it. This profile includes the checks for the cluster portion. It is intended  to be used in conjunction with the <b>[Kubernetes Node](https://gitlab.dsolab.io/scv-content/inspec/kubernetes/k8s-node-stig-baseline)</b> profile that performs automated compliance checks of the Kubernetes nodes.
+The Kubernetes STIG includes security requirements for both the Kubernetes cluster itself and the nodes that comprise it. This profile includes the checks for the cluster portion. It is intended  to be used in conjunction with the <b>[Kubernetes Node](https://github.com/mitre/k8s-node-stig-baseline)</b> profile that performs automated compliance checks of the Kubernetes nodes.
 
 ## Getting Started
 
