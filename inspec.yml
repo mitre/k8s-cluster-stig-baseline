@@ -13,7 +13,7 @@ supports:
 
 depends:
 - name: inspec-k8s
-  url: https://github.com/bgeesaman/inspec-k8s/archive/0.1.3.tar.gz
+  url: https://github.com/inspec/inspec-k8s/archive/refs/tags/0.1.3.tar.gz
 
 inputs:
   - name: k8s_minium_version
