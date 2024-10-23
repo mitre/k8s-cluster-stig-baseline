@@ -54,8 +54,16 @@ and kube-node-lease namespaces, to user namespaces."
   namespaces = ['default', 'kube-public', 'kube-node-lease']
 
   namespaces.each do |namespace|
-    describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do
-      its('name') { should be_in approved_services }
+    k=k8sobjects(api: 'v1', type: 'services', namespace: namespace) 
+    if k.exist?       
+      describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do   
+	its('count') { should cmp 1 } 
+	its('entries.first.name') { should be_in approved_services }  
+      end
+    else
+      describe k do 
+        it { should_not exist } 
+      end 
     end
   end
 
