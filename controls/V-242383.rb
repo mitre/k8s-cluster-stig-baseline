@@ -50,27 +50,23 @@ and kube-node-lease namespaces, to user namespaces."
   tag cci: ['CCI-000366']
   tag nist: ['CM-6 b']
 
-  approved_services = ['kubernetes']
-  namespaces = ['default', 'kube-public', 'kube-node-lease']
+  approved_services = input('k8s_approved_services')
+  default_namespaces = input('k8s_default_namespaces')
 
-  namespaces.each do |namespace|
-    k=k8sobjects(api: 'v1', type: 'services', namespace: namespace) 
-    if k.exist?       
-      describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do   
-	its('count') { should cmp 1 } 
-	its('entries.first.name') { should be_in approved_services }  
-      end
-    else
-      describe k do 
-        it { should_not exist } 
-      end 
+  default_namespaces_with_unapproved_services = default_namespaces.reject { |ns| 
+    (k8sobjects(api: 'v1', type: 'services', namespace: ns).entries.map(&:name) - approved_services).empty?
+  }
+
+  default_namespaces_with_pods = default_namespaces.select { |ns| 
+    k8sobjects(api: 'v1', type: 'pods', namespace: ns).exist?
+  }
+
+  describe 'Default namespaces' do
+    it 'should only contain approved services or no services' do
+      expect(default_namespaces_with_unapproved_services).to all(be_empty), "Failing namespaces:\n\t#{default_namespaces_with_unapproved_services}"
     end
-  end
-
-  namespaces.each do |namespace|
-    describe "Pods in namespace: #{namespace}" do
-      subject { k8sobjects(api: 'v1', type: 'pods', namespace: namespace) }
-      it { should_not exist }
+    it 'should have no running pods' do
+      expect(default_namespaces_with_pods).to all(be_empty), "Failing namespaces: #{default_namespaces_with_pods}"
     end
   end
 end
