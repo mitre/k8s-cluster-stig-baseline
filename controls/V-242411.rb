@@ -57,7 +57,7 @@ the PPSM CAL."
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 
-  describe "Manually  Kubernetes Scheduler must enforces ports, protocols, and services (PPS)
+  describe "Manual - Kubernetes Scheduler must enforces ports, protocols, and services (PPS)
   that adhere to the Ports, Protocols, and Services Management Category Assurance
   List (PPSM CAL)" do
     skip
