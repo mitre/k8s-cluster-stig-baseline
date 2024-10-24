@@ -55,7 +55,7 @@ CAL."
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 
-  describe "Manually  Kubernetes etcd must enforces ports, protocols, and services (PPS)
+  describe "Manual - Kubernetes etcd must enforces ports, protocols, and services (PPS)
   that adhere to the Ports, Protocols, and Services Management Category Assurance
   List (PPSM CAL)" do
     skip

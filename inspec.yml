@@ -6,7 +6,7 @@ copyright_email: saf@groups.mitre.org
 license: Apache-2.0
 summary: InSpec testing for baseline compliance with the Kubernetes STIG
 description: An InSpec profile verifying compliance with Kubernetes STIG version 1.16 
-version: 1.0.1
+version: 1.16.0
 inspec_version: ">= 4.0"
 supports:
 - platform: k8s
@@ -21,3 +21,20 @@ inputs:
     type: string
     value: 'v1.19.5'
     required: true
+
+  - name: k8s_default_namespaces
+    description: Default namespaces used by kubernetes itself, which should not contain any user-defined resources
+    type: Array
+    required: true
+    value:
+      - 'default'
+      - 'kube-public'
+      - 'kube-node-lease'
+  
+
+  - name: k8s_approved_services
+    description: Services that are necessary to run inside the default kubernetes namespaces
+    type: Array
+    required: true
+    value:
+      - 'kubernetes'

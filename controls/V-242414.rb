@@ -47,9 +47,10 @@ pod port or reconfigure the image to use non-privileged ports."
   tag nist: ['CM-7 b']
 
   userspace_ports_found = []
-
+  default_namespaces = input('k8s_default_namespaces')
+  
   # List pods not in system namespaces
-  k8sobjects(api: 'v1', type: 'pods').where { namespace != 'kube-system' && namespace != 'kube-node-lease' && namespace != 'kube-public' }.entries.each do |entry|
+  k8sobjects(api: 'v1', type: 'pods').where { !default_namespaces.include?(namespace) }.entries.each do |entry|
     # List containers in each pod found
     k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).k8sobject.spec.containers.each do |container|
       # Inspect any port mapped on each container
@@ -68,9 +69,10 @@ pod port or reconfigure the image to use non-privileged ports."
 
   # Pass if no container ports are mapped in user namespaces
   if userspace_ports_found.empty?
-    describe 'Host port mapping found in pods in the user namespaces' do
-      subject { userspace_ports_found }
-      it { should be_empty }
+    describe 'All pods in the user namespaces' do
+      it 'should be using non-privileged host ports' do
+        expect(userspace_ports_found).to be_empty
+      end
     end
   end
 end

@@ -32,7 +32,15 @@ namespaces to user specific namespaces."
   tag cci: ['CCI-001082']
   tag nist: ['SC-2']
 
-  describe 'Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces' do
-    skip
+  default_namespaces = input('k8s_default_namespaces')
+
+  default_namespaces_with_pods = default_namespaces.select { |ns| 
+    k8sobjects(api: 'v1', type: 'pods', namespace: ns).exist?
+  }
+
+  describe 'Default namespaces' do
+    it 'should have no running pods' do
+      expect(default_namespaces_with_pods).to all(be_empty), "Failing namespaces: #{default_namespaces_with_pods}"
+    end
   end
 end
