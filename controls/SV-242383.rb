@@ -36,19 +36,22 @@ If a return value is returned from the "kubectl get all" command and it is not t
   tag cci: ['CCI-000366']
   tag nist: ['CM-6 b']
 
-  approved_services = ['kubernetes']
-  namespaces = ['default', 'kube-public', 'kube-node-lease']
+  approved_services = input('approved_system_services')
+  approved_pods = input('approved_system_pods')
+  system_namespaces = input('system_namespaces')
 
-  namespaces.each do |namespace|
+  # look for unexpected services in the system namespaces
+  system_namespaces.each do |namespace|
     describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do
       its('name') { should be_in approved_services }
     end
   end
 
-  namespaces.each do |namespace|
+  # look for unexpected pods
+  system_namespaces.each do |namespace|
     describe "Pods in namespace: #{namespace}" do
-      subject { k8sobjects(api: 'v1', type: 'pods', namespace: namespace) }
-      it { should_not exist }
+      subject { k8sobjects(api: 'v1', type: 'pods', namespace: namespace).where { !name.match?(/#{approved_pods.join('|')}/) } }
+      its('name') { should be_in approved_pods }
     end
   end
 end

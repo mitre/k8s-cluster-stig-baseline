@@ -26,31 +26,28 @@ If any host-privileged ports are returned for any of the pods, this is a finding
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 
-  userspace_ports_found = []
+  system_namespaces = input('system_namespaces')
+  min_allowed_host_port = input('min_allowed_host_port')
+  failing_user_pods = []
 
   # List pods not in system namespaces
-  k8sobjects(api: 'v1', type: 'pods').where { namespace != 'kube-system' && namespace != 'kube-node-lease' && namespace != 'kube-public' }.entries.each do |entry|
+  k8sobjects(api: 'v1', type: 'pods').where { !system_namespaces.include?(namespace) }.entries.each do |entry|
     # List containers in each pod found
     k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).k8sobject.spec.containers.each do |container|
       # Inspect any port mapped on each container
       next if container.ports.nil? || container.ports.empty?
       container.ports.each do |port|
         next if port.hostPort.nil?
-        # Tally up ports found
-        userspace_ports_found << port.hostPort
-        describe "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} hostPort: #{port.hostPort}" do
-          subject { port.hostPort }
-          it { should cmp >= 1024 }
+        if port.hostPort >= min_allowed_host_port
+          failing_user_pods << "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} hostPort: #{port.hostPort}"
         end
       end
     end
   end
 
-  # Pass if no container ports are mapped in user namespaces
-  if userspace_ports_found.empty?
-    describe 'Host port mapping found in pods in the user namespaces' do
-      subject { userspace_ports_found }
-      it { should be_empty }
+  describe 'User pods' do
+    it 'should use non-privileged host ports' do
+      expect(failing_user_pods).to be_empty, "Failing pods:\n\t- #{failing_user_pods.join("\n\t- ")}"
     end
   end
 end

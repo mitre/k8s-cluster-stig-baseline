@@ -19,7 +19,7 @@ kubectl delete deployment kubernetes-dashboard --namespace=kube-system'
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
-  describe 'Kubernetes Dashboard resources' do
+  describe 'Kubernetes Dashboard' do
     subject { k8sobjects(api: 'v1', type: 'pods', labelSelector: 'k8s-app=kubernetes-dashboard') }
     it { should_not exist }
   end
