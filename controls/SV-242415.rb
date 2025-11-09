@@ -78,7 +78,7 @@ If any of the values returned reference environment variables, this is a finding
   tag fix_id: 'F-45648r712600_fix'
   tag cci: ['CCI-000196', 'CCI-004062']
   tag nist: ['IA-5 (1) (c)', 'IA-5 (1) (d)']
-
+  
   k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
     describe k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace) do
       its('k8sobject.spec.to_s') { should_not match 'secretKeyRef' }
