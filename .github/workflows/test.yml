@@ -36,6 +36,11 @@ jobs:
           inspec exec . -t k8s:// --reporter cli json:test-results.json
         continue-on-error: true
 
+      - name: Validate with SAF CLI
+        uses: mitre/saf_action@v1
+        with:
+          command_string: 'validate threshold -i test-results.json -F threshold.yml'
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
