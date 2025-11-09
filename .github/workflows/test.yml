@@ -1,0 +1,45 @@
+name: Test InSpec Profile
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test-profile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          driver: docker
+          kubernetes-version: v1.28.0
+
+      - name: Install InSpec
+        run: |
+          curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-auditor -v 6
+          cinc-auditor --version
+
+      - name: Verify InSpec K8s plugin
+        run: |
+          inspec plugin list
+
+      - name: Run InSpec profile against Minikube
+        run: |
+          inspec exec . -t k8s:// --reporter cli json:test-results.json
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inspec-test-results
+          path: test-results.json
+          retention-days: 30
