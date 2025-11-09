@@ -49,9 +49,12 @@ If a return value is returned from the "kubectl get all" command and it is not t
 
   # look for unexpected pods
   system_namespaces.each do |namespace|
-    describe "Pods in namespace: #{namespace}" do
-      subject { k8sobjects(api: 'v1', type: 'pods', namespace: namespace).where { !name.match?(/#{approved_pods.join('|')}/) } }
-      its('name') { should be_in approved_pods }
+    pods = k8sobjects(api: 'v1', type: 'pods', namespace: namespace)
+    failing_pods = pods.name.select { |pod| !pod.match?(/#{approved_pods.join('|')}/) }
+    describe "Pods in namespace #{namespace}" do
+      it 'should be in the approved pod name list' do
+        expect(failing_pods).to be_empty, "Failing pods:\n\t- #{failing_pods.join("\n\t- ")}"
+      end
     end
   end
 end
