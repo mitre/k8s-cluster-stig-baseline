@@ -39,7 +39,7 @@ jobs:
       - name: Validate with SAF CLI
         uses: mitre/saf_action@v1
         with:
-          command_string: 'validate threshold -i test-results.json -F threshold.yml'
+          command_string: 'validate threshold -i test-results.json -T threshold.yml'
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
