@@ -44,10 +44,15 @@ kubectl delete pod podname
     end
   end
 
-  image_tally.each do |image_name, versions|
-    describe "Image #{image_name}; versions #{versions} count" do
-      subject { versions.length }
-      it { should_not cmp > 1 }
+  failing_images = image_tally.select { 
+    |k, v| v.count > 1
+  }.map {
+    |k, v| "#{k}: #{v.join(', ')}"
+  }
+
+  describe 'The Kubernetes cluster' do
+    it 'should not be using multiple versions of the same container image in different pods' do
+      expect(failing_images).to be_empty, "Failing images:\n\t- #{failing_images.join("\n\t- ")}"
     end
   end
 end

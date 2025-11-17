@@ -87,7 +87,7 @@ kubectl create -f restricted.yml"
   tag cci: ['CCI-002233', 'CCI-002263']
   tag nist: ['AC-6 (8)', 'AC-16 a']
 
-  if k8sversion.gitVersion >= 1.25.0
+  if k8sversion.gitVersion >= '1.25.0'
 
 
     pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
