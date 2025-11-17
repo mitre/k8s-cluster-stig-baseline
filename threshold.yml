@@ -1,0 +1,12 @@
+compliance:
+  min: 0
+  max: 100
+passed:
+  min: 0
+failed:
+  min: 0
+skipped:
+  min: 0
+error:
+  min: 0
+  max: 0

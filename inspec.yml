@@ -17,7 +17,44 @@ depends:
 
 inputs:
   - name: k8s_minium_version
-    description: 'Minimum version of Kubernetes deployment'
-    type: string
+    desc: Minimum permitted Kubernetes version
+    type: String
     value: 'v1.19.5'
     required: true
+
+  # SV-242383
+  - name: approved_system_services
+    description: Service names allowed to run in system namespaces
+    type: Array
+    value:
+      - kube-dns
+      - kubernetes
+
+  - name: approved_system_pods
+    description: Pods allowed to run in system namespaces
+    type: Array
+    value:
+      - coredns
+      - etcd
+      - kindnet
+      - kube-apiserver
+      - kube-controller-manager
+      - kube-proxy
+      - kube-scheduler
+      - storage-provisioner
+
+  # SV-242383, SV-242414
+  - name: system_namespaces
+    description: Namespaces where core Kubernetes services run that should not have any user-created resources
+    type: Array
+    value:
+      - default
+      - kube-public
+      - kube-node-lease
+      - kube-system
+
+  # SV-242414
+  - name: min_allowed_host_port
+    desc: Mimimum host on the port that Kubernetes user pods can use
+    type: Numeric
+    value: 1024

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-deployment
+spec:
+  replicas: 1 # You can adjust the number of replicas
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox-container
+        image: busybox
+        command: ["sh", "-c", "echo Container is Running ; sleep 3600"]
+        env:
+          - name: SECRET
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: FOO
