@@ -18,7 +18,17 @@ If any user pods are present in the Kubernetes system namespaces, this is a find
   tag cci: ['CCI-001082']
   tag nist: ['SC-2']
 
-  describe 'Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces' do
-    skip
+  approved_pods = input('approved_system_pods')
+  system_namespaces = input('system_namespaces')
+
+  # look for unexpected pods
+  system_namespaces.each do |namespace|
+    pods = k8sobjects(api: 'v1', type: 'pods', namespace: namespace)
+    failing_pods = pods.name.select { |pod| !pod.match?(/#{approved_pods.join('|')}/) }
+    describe "Pods in namespace #{namespace}" do
+      it 'should be in the approved pod name list' do
+        expect(failing_pods).to be_empty, "Failing pods:\n\t- #{failing_pods.join("\n\t- ")}"
+      end
+    end
   end
 end

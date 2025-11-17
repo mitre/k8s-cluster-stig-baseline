@@ -37,24 +37,12 @@ If a return value is returned from the "kubectl get all" command and it is not t
   tag nist: ['CM-6 b']
 
   approved_services = input('approved_system_services')
-  approved_pods = input('approved_system_pods')
   system_namespaces = input('system_namespaces')
 
   # look for unexpected services in the system namespaces
   system_namespaces.each do |namespace|
     describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do
       its('name') { should be_in approved_services }
-    end
-  end
-
-  # look for unexpected pods
-  system_namespaces.each do |namespace|
-    pods = k8sobjects(api: 'v1', type: 'pods', namespace: namespace)
-    failing_pods = pods.name.select { |pod| !pod.match?(/#{approved_pods.join('|')}/) }
-    describe "Pods in namespace #{namespace}" do
-      it 'should be in the approved pod name list' do
-        expect(failing_pods).to be_empty, "Failing pods:\n\t- #{failing_pods.join("\n\t- ")}"
-      end
     end
   end
 end
