@@ -87,44 +87,53 @@ kubectl create -f restricted.yml"
   tag cci: ['CCI-002233', 'CCI-002263']
   tag nist: ['AC-6 (8)', 'AC-16 a']
 
-  pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
+  if k8sversion.gitVersion >= 1.25.0
 
-  describe 'Pod Security Policies' do
-    subject { pod_security_policies }
-    it { should exist }
-  end
 
-  pod_security_policies.entries.each do |policy|
-    policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
+    pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
 
-    describe policy_object do
-      its ('item.spec.runAsUser.rule') { should cmp 'MustRunAsNonRoot' }
+    describe 'Pod Security Policies' do
+      subject { pod_security_policies }
+      it { should exist }
     end
 
-    describe "Pod security: #{policy.name}; Policy fsGroup ranges" do
-      subject { policy_object.item.spec.fsGroup.ranges }
-      it { should_not be_nil }
-    end
+    pod_security_policies.entries.each do |policy|
+      policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
 
-    unless policy_object.item.spec.fsGroup.ranges.nil?
-      describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
-        subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
-        it { should_not be_empty }
-        it { should_not include 0 }
+      describe policy_object do
+        its ('item.spec.runAsUser.rule') { should cmp 'MustRunAsNonRoot' }
+      end
+
+      describe "Pod security: #{policy.name}; Policy fsGroup ranges" do
+        subject { policy_object.item.spec.fsGroup.ranges }
+        it { should_not be_nil }
+      end
+
+      unless policy_object.item.spec.fsGroup.ranges.nil?
+        describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
+          subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
+          it { should_not be_empty }
+          it { should_not include 0 }
+        end
+      end
+
+      describe "Pod security: #{policy.name}; Policy supplementalGroups ranges" do
+        subject { policy_object.item.spec.supplementalGroups.ranges }
+        it { should_not be_nil }
+      end
+
+      unless policy_object.item.spec.supplementalGroups.ranges.nil?
+        describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
+          subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+          it { should_not be_empty }
+          it { should_not include 0 }
+        end
       end
     end
-
-    describe "Pod security: #{policy.name}; Policy supplementalGroups ranges" do
-      subject { policy_object.item.spec.supplementalGroups.ranges }
-      it { should_not be_nil }
-    end
-
-    unless policy_object.item.spec.supplementalGroups.ranges.nil?
-      describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
-        subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
-        it { should_not be_empty }
-        it { should_not include 0 }
-      end
+  else
+    impact 0.0
+    describe 'N/A' do
+      skip 'Requirement not applicable to Kubernetes versions after 1.25'
     end
   end
 end
