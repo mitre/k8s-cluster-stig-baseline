@@ -21,3 +21,18 @@ inputs:
     type: string
     value: 'v1.19.5'
     required: true
+
+  - name: pod_security_admission_minimum_level
+    description: 'Minimum Pod Security Admission enforce level for application namespaces'
+    type: string
+    value: 'baseline'
+    required: true
+
+  - name: pod_security_admission_exempt_namespaces
+    description: 'Namespaces exempt from the Pod Security Admission enforce-label check'
+    type: array
+    value:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+    required: true
