@@ -109,11 +109,6 @@ jobs:
           path: results/
           if-no-files-found: warn
 
-      - name: Publish Kitchen outcome
-        if: always()
-        run: |
-          echo "Kitchen outcome: ${{ steps.kitchen.outcome }}" >> "$GITHUB_STEP_SUMMARY"
-
       - name: Remove Kind resources
         if: always()
         run: bundle exec kitchen destroy ${{ matrix.suite }} || true
