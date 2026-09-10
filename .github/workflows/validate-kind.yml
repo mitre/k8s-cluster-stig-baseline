@@ -1,0 +1,71 @@
+name: Kind Cluster Testing
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Kubernetes cluster STIG profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      CHEF_LICENSE: accept-silent
+      KITCHEN_LOCAL_YAML: kitchen.kind.yml
+      LC_ALL: en_US.UTF-8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@e5517072e87f198d9533967ae13d97c11b604005 # v1.99.0
+        with:
+          ruby-version: '3.1'
+
+      - name: Install profile dependencies
+        run: |
+          echo 'gem: --no-document' >> ~/.gemrc
+          bundle install
+          bundle exec inspec vendor . --overwrite
+
+      - name: Check the InSpec profile
+        run: bundle exec inspec check .
+
+      - name: Install Kind and kubectl
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1
+        with:
+          install_only: true
+          version: v0.33.0
+          kubectl_version: v1.32.0
+
+      - name: Run Kitchen Kind suite
+        id: kitchen
+        continue-on-error: true
+        run: bundle exec kitchen test --destroy=always vanilla
+
+      - name: Upload Kind assessment results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: kind-vanilla-results
+          path: results/
+          if-no-files-found: warn
+
+      - name: Publish Kitchen outcome
+        if: always()
+        run: |
+          echo "Kitchen outcome: ${{ steps.kitchen.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove Kind resources
+        if: always()
+        run: bundle exec kitchen destroy vanilla || true
