@@ -42,18 +42,36 @@ If a return value is returned from the "kubectl get all" command and it is not t
   tag nist: ['CM-6 b']
 
   approved_services = ['kubernetes']
-  namespaces = ['default', 'kube-public', 'kube-node-lease']
+  namespaces = ['default', 'kube-public']
+  kube_node_lease_exists = k8sobjects(api: 'v1', type: 'namespaces').entries.any? do |namespace|
+    namespace.name == 'kube-node-lease'
+  end
+  namespaces << 'kube-node-lease' if kube_node_lease_exists
 
+  unexpected_resources = []
   namespaces.each do |namespace|
-    describe k8sobjects(api: 'v1', type: 'services', namespace: namespace) do
-      its('name') { should be_in approved_services }
+    k8sobjects(api: 'v1', type: 'services', namespace: namespace).entries.each do |service|
+      unexpected_resources << "Service/#{namespace}/#{service.name}" unless approved_services.include?(service.name)
+    end
+    {
+      'v1' => { 'pods' => 'Pod', 'replicationcontrollers' => 'ReplicationController' },
+      'apps/v1' => {
+        'daemonsets' => 'DaemonSet',
+        'deployments' => 'Deployment',
+        'replicasets' => 'ReplicaSet',
+        'statefulsets' => 'StatefulSet'
+      }
+    }.each do |api, types|
+      types.each do |type, kind|
+        k8sobjects(api: api, type: type, namespace: namespace).entries.each do |resource|
+          unexpected_resources << "#{kind}/#{namespace}/#{resource.name}"
+        end
+      end
     end
   end
 
-  namespaces.each do |namespace|
-    describe "Pods in namespace: #{namespace}" do
-      subject { k8sobjects(api: 'v1', type: 'pods', namespace: namespace) }
-      it { should_not exist }
-    end
+  describe 'User-managed resources in protected namespaces' do
+    subject { unexpected_resources }
+    it { should be_empty }
   end
 end

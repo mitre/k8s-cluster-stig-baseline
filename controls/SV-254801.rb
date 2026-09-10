@@ -50,20 +50,21 @@ systemctl daemon-reload && systemctl restart kubelet)
   tag cci: ['CCI-002263']
   tag nist: ['AC-16 a']
 
-  required_components = %w[kube-apiserver kube-controller-manager kube-scheduler]
-  control_plane_pods = k8sobjects(api: 'v1', type: 'pods', namespace: 'kube-system').entries
+  control_plane_namespace = input('control_plane_namespace')
+  required_components = Array(input('control_plane_static_pod_components')).map(&:to_s)
+  control_plane_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries
   feature_gate_findings = required_components.each_with_object([]) do |component, findings|
     component_pods = control_plane_pods.select do |pod|
-      pod.labels['component'] == component || pod.name.to_s.start_with?("#{component}-")
+      pod.labels.to_h['component'] == component || pod.name.to_s.start_with?("#{component}-")
     end
 
     if component_pods.empty?
-      findings << "#{component} static Pod is not exposed in kube-system"
+      findings << "#{component} static Pod is not exposed in #{control_plane_namespace}"
       next
     end
 
     component_pods.each do |pod|
-      component_pod = k8sobject(api: 'v1', type: 'pods', namespace: 'kube-system', name: pod.name)
+      component_pod = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
       arguments = (component_pod.item&.spec&.containers || []).flat_map do |container|
         [container.command, container.args].flatten.compact.map(&:to_s)
       end

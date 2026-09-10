@@ -30,7 +30,12 @@ kubectl delete pod podname
 
   images = []
   k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
-    images << k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).container_images
+    pod = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace)
+    pod_spec = pod.item&.spec
+    containers = [pod_spec&.containers, pod_spec&.initContainers, pod_spec&.ephemeralContainers].flat_map do |container_group|
+      Array(container_group)
+    end
+    images.concat(containers.filter_map(&:image))
   end
 
   # remove duplicate image references
@@ -39,8 +44,13 @@ kubectl delete pod podname
   # tally up versions by image name
   image_tally = {}
   images.each do |image|
-    image_name, image_version = image.split(':', 2)
-    image_version = 'latest' if image_version.nil?
+    image_reference, image_digest = image.split('@', 2)
+    last_slash = image_reference.rindex('/')
+    last_colon = image_reference.rindex(':')
+    has_tag = last_colon && (last_slash.nil? || last_colon > last_slash)
+    image_name = has_tag ? image_reference[0...last_colon] : image_reference
+    image_version = has_tag ? image_reference[(last_colon + 1)..] : 'latest'
+    image_version = "#{image_version}@#{image_digest}" unless image_digest.nil?
 
     if image_tally[image_name]
       image_tally[image_name] << image_version

@@ -49,7 +49,19 @@ applied within the time allowed.'
   tag cci: ['CCI-002605', 'CCI-002635']
   tag nist: ['SI-2 c', 'SI-3 (10) (a)']
 
-  describe k8sversion do
-    its('gitVersion') { should cmp >= input('k8s_minium_version') }
+  approved_server_versions = Array(input('approved_kubernetes_server_versions')).map(&:to_s)
+
+  if approved_server_versions.empty?
+    describe 'Kubernetes API Server version authorization' do
+      skip "input('approved_kubernetes_server_versions') is empty; load the currently authorized API server version or versions from the applicable IAVM, CTO, DTM, or STIG."
+    end
+  else
+    describe k8sversion do
+      its('gitVersion') { should be_in approved_server_versions }
+    end
+  end
+
+  describe 'kubectl client-to-server version skew policy' do
+    skip 'The k8s target reports the API Server version but not the local kubectl client version; verify client-to-server skew with the Control Plane node profile.'
   end
 end

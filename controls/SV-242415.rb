@@ -81,15 +81,43 @@ a password vault.'
   tag cci: ['CCI-000196', 'CCI-004062']
   tag nist: ['IA-5 (1) (c)', 'IA-5 (1) (d)']
 
-  k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
-    describe k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace) do
-      its('k8sobject.spec.to_s') { should_not match 'secretKeyRef' }
+  secret_environment_variables = []
+  inspect_pod_spec = lambda do |workload, pod_spec|
+    containers = [pod_spec&.containers, pod_spec&.initContainers, pod_spec&.ephemeralContainers].flat_map do |container_group|
+      Array(container_group)
+    end
+
+    containers.each do |container|
+      Array(container.env).each do |environment_variable|
+        secret_name = environment_variable.valueFrom&.secretKeyRef&.name
+        next if secret_name.to_s.empty?
+
+        secret_environment_variables << "#{workload} container #{container.name} environment variable #{environment_variable.name} references Secret/#{secret_name}"
+      end
+
+      Array(container.envFrom).each do |environment_source|
+        secret_name = environment_source.secretRef&.name
+        next if secret_name.to_s.empty?
+
+        secret_environment_variables << "#{workload} container #{container.name} envFrom references Secret/#{secret_name}"
+      end
     end
   end
 
-  if k8sobjects(api: 'v1', type: 'pods').entries.empty?
-    describe 'No pods found in the cluster' do
-      skip
+  k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
+    pod = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace)
+    inspect_pod_spec.call("Pod/#{entry.namespace}/#{entry.name}", pod.item&.spec)
+  end
+
+  { 'deployments' => 'Deployment', 'statefulsets' => 'StatefulSet', 'daemonsets' => 'DaemonSet' }.each do |workload_type, workload_kind|
+    k8sobjects(api: 'apps/v1', type: workload_type).entries.each do |entry|
+      workload = k8sobject(api: 'apps/v1', type: workload_type, name: entry.name, namespace: entry.namespace)
+      inspect_pod_spec.call("#{workload_kind}/#{entry.namespace}/#{entry.name}", workload.item&.spec&.template&.spec)
     end
+  end
+
+  describe 'Pods that expose Kubernetes Secrets as environment variables' do
+    subject { secret_environment_variables }
+    it { should be_empty }
   end
 end

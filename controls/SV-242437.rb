@@ -107,60 +107,57 @@ kubectl create -f restricted.yml"
     pod_security_policies.entries.each do |policy|
       policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
 
-      describe policy_object do
-        its('item.spec.runAsUser.rule') { should cmp 'MustRunAsNonRoot' }
+      describe "Pod security: #{policy.name}; runAsUser rule" do
+        subject { policy_object.item&.spec&.runAsUser&.rule }
+        it { should cmp 'MustRunAsNonRoot' }
       end
 
       describe "Pod security: #{policy.name}; Policy fsGroup ranges" do
-        subject { policy_object.item.spec.fsGroup.ranges }
+        subject { policy_object.item&.spec&.fsGroup&.ranges }
         it { should_not be_nil }
       end
 
-      unless policy_object.item.spec.fsGroup.ranges.nil?
+      fs_group_ranges = policy_object.item&.spec&.fsGroup&.ranges
+      unless fs_group_ranges.nil?
         describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
-          subject { policy_object.item.spec.fsGroup.ranges.map(&:min) }
+          subject { fs_group_ranges }
           it { should_not be_empty }
-          it { should_not include 0 }
+        end
+
+        invalid_fs_group_ranges = fs_group_ranges.filter_map do |range|
+          "min=#{range.min.inspect}" if range.min.nil? || range.min.to_i.zero?
+        end
+        describe "Pod security: #{policy.name}; invalid fsGroup range minimums" do
+          subject { invalid_fs_group_ranges }
+          it { should be_empty }
         end
       end
 
       describe "Pod security: #{policy.name}; Policy supplementalGroups ranges" do
-        subject { policy_object.item.spec.supplementalGroups.ranges }
+        subject { policy_object.item&.spec&.supplementalGroups&.ranges }
         it { should_not be_nil }
       end
 
-      unless policy_object.item.spec.supplementalGroups.ranges.nil?
+      supplemental_group_ranges = policy_object.item&.spec&.supplementalGroups&.ranges
+      unless supplemental_group_ranges.nil?
         describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
-          subject { policy_object.item.spec.supplementalGroups.ranges.map(&:min) }
+          subject { supplemental_group_ranges }
           it { should_not be_empty }
-          it { should_not include 0 }
+        end
+
+        invalid_supplemental_group_ranges = supplemental_group_ranges.filter_map do |range|
+          "min=#{range.min.inspect}" if range.min.nil? || range.min.to_i.zero?
+        end
+        describe "Pod security: #{policy.name}; invalid supplementalGroups range minimums" do
+          subject { invalid_supplemental_group_ranges }
+          it { should be_empty }
         end
       end
     end
   else
-    levels = %w[privileged baseline restricted]
-    required_level = input('pod_security_admission_minimum_level')
-    required_level_index = levels.index(required_level)
-    exempt_namespaces = input('pod_security_admission_exempt_namespaces')
-    application_namespaces = k8sobjects(api: 'v1', type: 'namespaces').entries.reject do |namespace|
-      exempt_namespaces.include?(namespace.name)
-    end
-    noncompliant_namespaces = application_namespaces.filter_map do |namespace|
-      enforce_level = namespace.labels['pod-security.kubernetes.io/enforce']
-      enforce_level_index = levels.index(enforce_level)
-      next if enforce_level_index && required_level_index && enforce_level_index >= required_level_index
-
-      "#{namespace.name} (enforce=#{enforce_level || 'unset'})"
-    end
-
-    describe 'Configured Pod Security Admission minimum enforce level' do
-      subject { required_level }
-      it { should be_in levels }
-    end
-
-    describe "Application namespaces enforce Pod Security Admission at #{required_level} or stricter" do
-      subject { noncompliant_namespaces }
-      it { should be_empty }
+    impact 0.0
+    describe 'PodSecurityPolicy on Kubernetes 1.25 or later' do
+      skip 'PodSecurityPolicy was removed in Kubernetes 1.25; evaluate Pod Security Admission with SV-254800 and SV-254801.'
     end
   end
 end

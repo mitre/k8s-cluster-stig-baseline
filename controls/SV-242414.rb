@@ -38,8 +38,14 @@ pod port or reconfigure the image to use non-privileged ports.'
 
   # List pods not in system namespaces
   k8sobjects(api: 'v1', type: 'pods').where { namespace != 'kube-system' && namespace != 'kube-node-lease' && namespace != 'kube-public' }.entries.each do |entry|
-    # List containers in each pod found
-    k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).k8sobject.spec.containers.each do |container|
+    pod = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace)
+    pod_spec = pod.item&.spec
+    containers = [pod_spec&.containers, pod_spec&.initContainers, pod_spec&.ephemeralContainers].flat_map do |container_group|
+      Array(container_group)
+    end
+
+    # Inspect regular, init, and ephemeral containers in each pod.
+    containers.each do |container|
       # Inspect any port mapped on each container
       next if container.ports.nil? || container.ports.empty?
       container.ports.each do |port|

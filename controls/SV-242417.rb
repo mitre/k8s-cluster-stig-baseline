@@ -25,6 +25,6 @@ namespaces to user specific namespaces.'
   tag nist: ['SC-2']
 
   describe 'Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces' do
-    skip
+    skip 'Determining whether a workload is user-managed requires workload ownership information that is not available from the Kubernetes API.'
   end
 end

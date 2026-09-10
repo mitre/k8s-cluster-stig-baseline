@@ -54,27 +54,34 @@ The encryption config must specify the Secret's resource and provider. Below is 
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
-  api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: 'kube-system').entries.select do |pod|
-    pod.labels['component'] == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
+  control_plane_namespace = input('control_plane_namespace')
+  api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.select do |pod|
+    pod.labels.to_h['component'] == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
   end
-  encryption_config_files = api_server_pods.each_with_object([]) do |pod, files|
-    api_server = k8sobject(api: 'v1', type: 'pods', namespace: 'kube-system', name: pod.name)
+  encryption_config_findings = []
+  encryption_config_findings << "No kube-apiserver static Pod is exposed in #{control_plane_namespace}" if api_server_pods.empty?
+
+  api_server_pods.each do |pod|
+    api_server = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
     arguments = (api_server.item&.spec&.containers || []).flat_map do |container|
       [container.command, container.args].flatten.compact.map(&:to_s)
     end
-    argument_index = arguments.index do |argument|
-      argument == '--encryption-provider-config' || argument.start_with?('--encryption-provider-config=')
+    encryption_config_files = arguments.each_with_index.filter_map do |argument, index|
+      if argument == '--encryption-provider-config'
+        arguments[index + 1]
+      elsif argument.start_with?('--encryption-provider-config=')
+        argument.split('=', 2).last
+      end
     end
-    next if argument_index.nil?
 
-    argument = arguments[argument_index]
-    files << (argument == '--encryption-provider-config' ? arguments[argument_index + 1] : argument.split('=', 2).last)
-  end.compact
+    if encryption_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
+      encryption_config_findings << "kube-apiserver Pod #{pod.name} does not set a non-empty --encryption-provider-config"
+    end
+  end
 
-  describe 'Kubernetes API Server encryption provider configuration file' do
-    subject { encryption_config_files }
-    it { should_not be_empty }
-    it { should_not include '' }
+  describe 'Kubernetes API Server encryption provider configuration-file arguments' do
+    subject { encryption_config_findings }
+    it { should be_empty }
   end
 
   describe 'Encryption provider configuration-file contents' do
