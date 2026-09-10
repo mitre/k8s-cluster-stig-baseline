@@ -18,5 +18,5 @@ kubectl wait --for=condition=Ready nodes --all --timeout=2m
 
 # --no-distinct-exit preserves skipped controls in the report while returning a
 # conventional nonzero status for failed assertions, which Kitchen propagates.
-bundle exec inspec exec "${ROOT_DIR}" --target k8s:// --no-distinct-exit \
+bundle exec cinc-auditor exec "${ROOT_DIR}" --target k8s:// --no-distinct-exit \
   --input-file "${INPUT_FILE}" --reporter cli "json:${RESULT_FILE}"

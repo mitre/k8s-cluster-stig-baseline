@@ -36,10 +36,10 @@ jobs:
         run: |
           echo 'gem: --no-document' >> ~/.gemrc
           bundle install
-          bundle exec inspec vendor . --overwrite
+          bundle exec cinc-auditor vendor . --overwrite
 
       - name: Check the InSpec profile
-        run: bundle exec inspec check .
+        run: bundle exec cinc-auditor check .
 
       - name: Install Kind and kubectl
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1
