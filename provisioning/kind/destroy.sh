@@ -11,4 +11,5 @@ if command -v kind >/dev/null && kind get clusters | grep -Fxq "${KIND_CLUSTER_N
 fi
 
 rm -f "${KUBECONFIG_PATH}"
+rm -rf "${ROOT_DIR}/.kitchen/kind/${KIND_CLUSTER_NAME}-files"
 rmdir "${ROOT_DIR}/.kitchen/kind" 2>/dev/null || true

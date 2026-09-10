@@ -23,3 +23,11 @@ suites:
         - local: ./provisioning/kind/verify.sh vanilla
       post_destroy:
         - local: ./provisioning/kind/destroy.sh vanilla
+  - name: hardened
+    lifecycle:
+      pre_create:
+        - local: ./provisioning/kind/create.sh hardened
+      pre_verify:
+        - local: ./provisioning/kind/verify.sh hardened
+      post_destroy:
+        - local: ./provisioning/kind/destroy.sh hardened
