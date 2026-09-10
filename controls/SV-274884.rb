@@ -32,11 +32,13 @@ If Secrets are attached to applications without a documented requirement, this i
   end
 
   secret_read_roles = {}
-  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'clusterroles').entries.each do |role|
-    secret_read_roles["ClusterRole/#{role.name}"] = true if secret_read_role.call(role)
+  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'clusterroles').entries.each do |role_entry|
+    role = k8sobject(api: 'rbac.authorization.k8s.io/v1', type: 'clusterroles', name: role_entry.name).item
+    secret_read_roles["ClusterRole/#{role_entry.name}"] = true if role && secret_read_role.call(role)
   end
-  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'roles').entries.each do |role|
-    secret_read_roles["Role/#{role.namespace}/#{role.name}"] = true if secret_read_role.call(role)
+  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'roles').entries.each do |role_entry|
+    role = k8sobject(api: 'rbac.authorization.k8s.io/v1', type: 'roles', namespace: role_entry.namespace, name: role_entry.name).item
+    secret_read_roles["Role/#{role_entry.namespace}/#{role_entry.name}"] = true if role && secret_read_role.call(role)
   end
 
   role_reference = lambda do |binding|
@@ -59,12 +61,20 @@ If Secrets are attached to applications without a documented requirement, this i
   secret_read_bindings = []
   binding_types = { 'rolebindings' => 'RoleBinding', 'clusterrolebindings' => 'ClusterRoleBinding' }
   binding_types.each do |binding_type, binding_kind|
-    k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: binding_type).entries.each do |binding|
+    k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: binding_type).entries.each do |binding_entry|
+      binding = k8sobject(
+        api: 'rbac.authorization.k8s.io/v1',
+        type: binding_type,
+        namespace: binding_type == 'rolebindings' ? binding_entry.namespace : nil,
+        name: binding_entry.name
+      ).item
+      next if binding.nil?
+
       referenced_role = role_reference.call(binding)
       next unless secret_read_roles.key?(referenced_role)
 
       subjects = binding_subjects.call(binding)
-      binding_location = binding_type == 'rolebindings' ? "#{binding.namespace}/#{binding.name}" : binding.name
+      binding_location = binding_type == 'rolebindings' ? "#{binding_entry.namespace}/#{binding_entry.name}" : binding_entry.name
       secret_read_bindings << "#{binding_kind}/#{binding_location} grants #{referenced_role} to #{subjects.empty? ? 'no subjects' : subjects.join(', ')}"
     end
   end

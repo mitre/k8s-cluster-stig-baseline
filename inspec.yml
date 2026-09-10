@@ -29,7 +29,7 @@ inputs:
     required: true
 
   - name: control_plane_static_pod_components
-    description: 'Control-plane static Pod components that must enable the PodSecurity feature gate'
+    description: 'Control-plane static Pod components to inspect for the PodSecurity feature gate on Kubernetes versions before 1.25'
     type: array
     value:
       - kube-apiserver

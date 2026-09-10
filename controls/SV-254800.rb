@@ -55,14 +55,16 @@ Best Practice: https://kubernetes.io/docs/concepts/security/pod-security-policy/
   tag nist: ['AC-16 a']
 
   control_plane_namespace = input('control_plane_namespace')
-  api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.select do |pod|
-    pod.labels.to_h['component'] == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
+  api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
+    api_server = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
+    api_server_item = api_server.item
+    component = (api_server_item&.metadata&.labels&.to_h || {})['component']
+    [pod.name, api_server] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
   end
   admission_config_findings = []
   admission_config_findings << "No kube-apiserver static Pod is exposed in #{control_plane_namespace}" if api_server_pods.empty?
 
-  api_server_pods.each do |pod|
-    api_server = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
+  api_server_pods.each do |pod_name, api_server|
     arguments = (api_server.item&.spec&.containers || []).flat_map do |container|
       [container.command, container.args].flatten.compact.map(&:to_s)
     end
@@ -75,7 +77,7 @@ Best Practice: https://kubernetes.io/docs/concepts/security/pod-security-policy/
     end
 
     if admission_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
-      admission_config_findings << "kube-apiserver Pod #{pod.name} does not set a non-empty --admission-control-config-file"
+      admission_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --admission-control-config-file"
     end
   end
 
