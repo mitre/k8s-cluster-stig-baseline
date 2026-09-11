@@ -6,14 +6,14 @@ grep -i encryption-provider-config *
 
 If the setting "encryption-provider-config" is not configured, this is a finding.
 
-If the setting is configured, check the contents of the file specified by its argument. 
+If the setting is configured, check the contents of the file specified by its argument.
 
-If the file does not specify the Secret's resource, this is a finding. 
+If the file does not specify the Secret's resource, this is a finding.
 
 If the identity provider is specified as the first provider for the resource, this is also a finding.)
-  desc 'fix', %q(Edit the Kubernetes API Server manifest file in the /etc/kubernetes/manifests directory on the Kubernetes Master Node. 
+  desc 'fix', %q(Edit the Kubernetes API Server manifest file in the /etc/kubernetes/manifests directory on the Kubernetes Master Node.
 
-Set the value of "--encryption-provider-config" to the path to the encryption config. 
+Set the value of "--encryption-provider-config" to the path to the encryption config.
 
 The encryption config must specify the Secret's resource and provider. Below is an example:
 {
@@ -76,9 +76,7 @@ The encryption config must specify the Secret's resource and provider. Below is 
       end
     end
 
-    if encryption_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
-      encryption_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --encryption-provider-config"
-    end
+    encryption_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --encryption-provider-config" if encryption_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
   end
 
   describe 'Kubernetes API Server encryption provider configuration-file arguments' do

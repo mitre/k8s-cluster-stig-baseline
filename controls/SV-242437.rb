@@ -11,13 +11,13 @@ in what the pod can do and access.'
   desc 'check', 'Prior to version 1.21, to enforce security policiesPod Security Policies (psp) were used. Those are now deprecated and will be removed from version 1.25.
 
 Migrate from PSP to PSA:
-https://kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/ 
+https://kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/
 
 Pre-version 1.25 Check:
 On the Control Plane, run the command:
 kubectl get podsecuritypolicy
 
-If there is no pod security policy configured, this is a finding. 
+If there is no pod security policy configured, this is a finding.
 
 For any pod security policies listed, edit the policy with the command:
 kubectl edit podsecuritypolicy policyname

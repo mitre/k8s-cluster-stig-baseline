@@ -4,7 +4,7 @@ control 'SV-274883' do
 
 Kubernetes offers a resource called Secrets that are designed for storing sensitive information for use by applications. Secrets are created and managed separately from application code. Additionally, they can be encrypted at rest and access to the secrets can be controlled via RBAC.'
   desc 'check', 'On the Kubernetes Master node, run the following command:
-kubectl get all,cm -A -o yaml 
+kubectl get all,cm -A -o yaml
 
 Manually review the output for sensitive information.
 

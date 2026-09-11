@@ -6,7 +6,7 @@ Assurance List (PPSM CAL).'
 controlled and conform to the PPSM CAL. Those PPS that fall outside the PPSM
 CAL must be blocked. Instructions on the PPSM can be found in DoD Instruction
 8551.01 Policy.'
-  desc 'check', 'Change to the /etc/kubernetes/manifests/ directory on the Kubernetes Control Plane. Run the command: 
+  desc 'check', 'Change to the /etc/kubernetes/manifests/ directory on the Kubernetes Control Plane. Run the command:
 grep kube-conntroller-manager.manifest -I -secure-port
 
 -Review manifest file by executing the following:
@@ -20,8 +20,8 @@ Review ports:
 - containerPort:
        hostPort:
 
-Run Command: 
-kubectl describe services --all-namespaces 
+Run Command:
+kubectl describe services --all-namespaces
 Search labels for any controller namespaces.
 
 Any manifest and namespace PPS or services configuration not in compliance with PPSM CAL is a finding.
@@ -32,7 +32,7 @@ Review findings against the most recent PPSM CAL:
 https://cyber.mil/ppsm/cal/
 
 Verify Controller network boundary with the PPS associated with the Controller for Assurance Categories. Any PPS not in compliance with the CAL Assurance Category requirements is a finding.'
-  desc 'fix', 'Amend any system documentation requiring revision to comply with the PPSM CAL. 
+  desc 'fix', 'Amend any system documentation requiring revision to comply with the PPSM CAL.
 
 Update Kubernetes Controller manifest and namespace PPS configuration to comply with PPSM CAL.'
   impact 0.5

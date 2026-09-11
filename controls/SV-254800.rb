@@ -2,7 +2,7 @@ control 'SV-254800' do
   title 'Kubernetes must have a Pod Security Admission control file configured.'
   desc 'An admission controller intercepts and processes requests to the Kubernetes API prior to persistence of the object, but after the request is authenticated and authorized.
 
-Kubernetes (> v1.23)offers a built-in Pod Security admission controller to enforce the Pod Security Standards. Pod security restrictions are applied at the namespace level when pods are created. 
+Kubernetes (> v1.23)offers a built-in Pod Security admission controller to enforce the Pod Security Standards. Pod security restrictions are applied at the namespace level when pods are created.
 
 The Kubernetes Pod Security Standards define different isolation levels for Pods. These standards define how to restrict the behavior of pods in a clear, consistent fashion.'
   desc 'check', 'Change to the /etc/kubernetes/manifests directory on the Kubernetes Control Plane. Run the command:
@@ -11,9 +11,9 @@ The Kubernetes Pod Security Standards define different isolation levels for Pods
 
 If the setting "--admission-control-config-file" is not configured in the Kubernetes API Server manifest file, this is a finding.
 
-Inspect the .yaml file defined by the --admission-control-config-file. Verify PodSecurity is properly configured. 
+Inspect the .yaml file defined by the --admission-control-config-file. Verify PodSecurity is properly configured.
 If least privilege is not represented, this is a finding.'
-  desc 'fix', %q(Edit the Kubernetes API Server manifest file in the /etc/kubernetes/manifests directory on the Kubernetes Control Plane. 
+  desc 'fix', %q(Edit the Kubernetes API Server manifest file in the /etc/kubernetes/manifests directory on the Kubernetes Control Plane.
 
 Set the value of "--admission-control-config-file" to a valid path for the file.
 
@@ -34,7 +34,7 @@ plugins:
     exemptions:
       # Don't forget to exempt namespaces or users that are responsible for deploying
       # cluster components, because they need to run privileged containers
-      usernames: ["admin"] 
+      usernames: ["admin"]
       namespaces: ["kube-system"]
 
 See for more details:
@@ -76,9 +76,7 @@ Best Practice: https://kubernetes.io/docs/concepts/security/pod-security-policy/
       end
     end
 
-    if admission_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
-      admission_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --admission-control-config-file"
-    end
+    admission_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --admission-control-config-file" if admission_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
   end
 
   describe 'Kubernetes API Server Pod Security Admission configuration-file arguments' do

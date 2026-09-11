@@ -1,5 +1,10 @@
 source 'https://rubygems.org'
 
+gem 'cookstyle'
+gem 'parser', '3.3.0.5'
+gem 'rake'
+gem 'rubocop'
+gem 'rubocop-rake'
 gem 'test-kitchen'
 gem 'train-kubernetes',
     git: 'https://github.com/inspec/train-kubernetes.git',

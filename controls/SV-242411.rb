@@ -20,8 +20,8 @@ Review ports:
 - containerPort:
        hostPort:
 
-Run Command: 
-kubectl describe services --all-namespaces 
+Run Command:
+kubectl describe services --all-namespaces
 Search labels for any scheduler namespaces.
 Port:
 
@@ -33,7 +33,7 @@ Review findings against the most recent PPSM CAL:
 https://cyber.mil/ppsm/cal/
 
 Verify Scheduler network boundary with the PPS associated with the CAL Assurance Categories. Any PPS not in compliance with the CAL Assurance Category requirements is a finding.'
-  desc 'fix', 'Amend any system documentation requiring revision to comply with the PPSM CAL. 
+  desc 'fix', 'Amend any system documentation requiring revision to comply with the PPSM CAL.
 
 Update Kubernetes Scheduler manifest and namespace PPS configuration to comply with the PPSM CAL.'
   impact 0.5

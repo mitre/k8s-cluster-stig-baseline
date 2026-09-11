@@ -48,6 +48,7 @@ pod port or reconfigure the image to use non-privileged ports.'
     containers.each do |container|
       # Inspect any port mapped on each container
       next if container.ports.nil? || container.ports.empty?
+
       container.ports.each do |port|
         next if port.hostPort.nil?
         next if port.hostPort.to_i >= 1024

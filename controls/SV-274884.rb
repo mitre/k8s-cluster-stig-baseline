@@ -1,12 +1,12 @@
 control 'SV-274884' do
   title 'Kubernetes must limit Secret access on a need-to-know basis.'
   desc 'Kubernetes secrets may store sensitive information such as passwords, tokens, and keys. Access to these secrets should be limited to a need-to-know basis via Kubernetes RBAC.'
-  desc 'check', 'Review the Kubernetes accounts and their corresponding roles. 
+  desc 'check', 'Review the Kubernetes accounts and their corresponding roles.
 
-If any accounts have read (list, watch, get) access to Secrets without a documented organizational requirement, this is a finding. 
+If any accounts have read (list, watch, get) access to Secrets without a documented organizational requirement, this is a finding.
 
 Run the below command to list the workload resources for applications deployed to Kubernetes:
-kubectl get all -A -o yaml 
+kubectl get all -A -o yaml
 
 If Secrets are attached to applications without a documented requirement, this is a finding.'
   desc 'fix', 'For Kubernetes accounts that have read access to Secrets without a documented requirement, modify the corresponding Role or ClusterRole to remove list, watch, and get privileges for Secrets.'
@@ -45,9 +45,10 @@ If Secrets are attached to applications without a documented requirement, this i
     role_ref = binding.roleRef
     next nil if role_ref.nil? || role_ref.kind.to_s.empty? || role_ref.name.to_s.empty?
 
-    if role_ref.kind == 'ClusterRole'
+    case role_ref.kind
+    when 'ClusterRole'
       "ClusterRole/#{role_ref.name}"
-    elsif role_ref.kind == 'Role'
+    when 'Role'
       "Role/#{binding.namespace}/#{role_ref.name}"
     end
   end

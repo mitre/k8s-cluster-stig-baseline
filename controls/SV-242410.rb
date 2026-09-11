@@ -19,8 +19,8 @@ hostPort:
 - containerPort:
 hostPort:
 
-Run command: 
-kubectl describe services --all-namespaces 
+Run command:
+kubectl describe services --all-namespaces
 Search labels for any apiserver namespaces.
 Port:
 
@@ -32,7 +32,7 @@ Review findings against the most recent PPSM CAL:
 https://cyber.mil/ppsm/cal/
 
 Verify API Server network boundary with the PPS associated with the CAL Assurance Categories. Any PPS not in compliance with the CAL Assurance Category requirements is a finding.'
-  desc 'fix', 'Amend any system documentation requiring revision to comply with PPSM CAL. 
+  desc 'fix', 'Amend any system documentation requiring revision to comply with PPSM CAL.
 
 Update Kubernetes API Server manifest and namespace PPS configuration to comply with PPSM CAL.'
   impact 0.5
