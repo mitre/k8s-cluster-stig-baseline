@@ -34,7 +34,7 @@ pod port or reconfigure the image to use non-privileged ports.'
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 
-  userspace_ports_found = []
+  privileged_host_ports = []
 
   # List pods not in system namespaces
   k8sobjects(api: 'v1', type: 'pods').where { namespace != 'kube-system' && namespace != 'kube-node-lease' && namespace != 'kube-public' }.entries.each do |entry|
@@ -50,21 +50,16 @@ pod port or reconfigure the image to use non-privileged ports.'
       next if container.ports.nil? || container.ports.empty?
       container.ports.each do |port|
         next if port.hostPort.nil?
-        # Tally up ports found
-        userspace_ports_found << port.hostPort
-        describe "Pod: #{entry.name} Namespace: #{entry.namespace} ContainerName: #{container.name} hostPort: #{port.hostPort}" do
-          subject { port.hostPort }
-          it { should cmp >= 1024 }
-        end
+        next if port.hostPort.to_i >= 1024
+
+        privileged_host_ports << "Pod/#{entry.namespace}/#{entry.name} container #{container.name} maps privileged hostPort #{port.hostPort}"
       end
     end
   end
 
-  # Pass if no container ports are mapped in user namespaces
-  if userspace_ports_found.empty?
-    describe 'Host port mapping found in pods in the user namespaces' do
-      subject { userspace_ports_found }
-      it { should be_empty }
+  describe 'Host port mappings in user namespaces' do
+    it 'should not use privileged host ports below 1024' do
+      expect(privileged_host_ports).to be_empty, "Pods using privileged host ports:\n\t- #{privileged_host_ports.join("\n\t- ")}"
     end
   end
 end

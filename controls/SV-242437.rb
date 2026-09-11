@@ -98,6 +98,7 @@ kubectl create -f restricted.yml"
 
   if kubernetes_minor_version < 25
     pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
+    policy_findings = []
 
     describe 'Pod Security Policies' do
       subject { pod_security_policies }
@@ -106,52 +107,36 @@ kubectl create -f restricted.yml"
 
     pod_security_policies.entries.each do |policy|
       policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
+      policy_spec = policy_object.item&.spec
+      run_as_user_rule = policy_spec&.runAsUser&.rule
+      policy_findings << "PodSecurityPolicy/#{policy.name} runAsUser.rule is #{run_as_user_rule.inspect}; expected 'MustRunAsNonRoot'" unless run_as_user_rule == 'MustRunAsNonRoot'
 
-      describe "Pod security: #{policy.name}; runAsUser rule" do
-        subject { policy_object.item&.spec&.runAsUser&.rule }
-        it { should cmp 'MustRunAsNonRoot' }
-      end
+      fs_group_ranges = policy_spec&.fsGroup&.ranges
+      if fs_group_ranges.nil? || fs_group_ranges.empty?
+        policy_findings << "PodSecurityPolicy/#{policy.name} must define at least one fsGroup range"
+      else
+        fs_group_ranges.each_with_index do |range, index|
+          next unless range.min.nil? || range.min.to_i.zero?
 
-      describe "Pod security: #{policy.name}; Policy fsGroup ranges" do
-        subject { policy_object.item&.spec&.fsGroup&.ranges }
-        it { should_not be_nil }
-      end
-
-      fs_group_ranges = policy_object.item&.spec&.fsGroup&.ranges
-      unless fs_group_ranges.nil?
-        describe "Pod security: #{policy.name}; Policy fsGroup range minimum" do
-          subject { fs_group_ranges }
-          it { should_not be_empty }
-        end
-
-        invalid_fs_group_ranges = fs_group_ranges.filter_map do |range|
-          "min=#{range.min.inspect}" if range.min.nil? || range.min.to_i.zero?
-        end
-        describe "Pod security: #{policy.name}; invalid fsGroup range minimums" do
-          subject { invalid_fs_group_ranges }
-          it { should be_empty }
+          policy_findings << "PodSecurityPolicy/#{policy.name} fsGroup.ranges[#{index}].min is #{range.min.inspect}; expected a value greater than 0"
         end
       end
 
-      describe "Pod security: #{policy.name}; Policy supplementalGroups ranges" do
-        subject { policy_object.item&.spec&.supplementalGroups&.ranges }
-        it { should_not be_nil }
+      supplemental_group_ranges = policy_spec&.supplementalGroups&.ranges
+      if supplemental_group_ranges.nil? || supplemental_group_ranges.empty?
+        policy_findings << "PodSecurityPolicy/#{policy.name} must define at least one supplementalGroups range"
+      else
+        supplemental_group_ranges.each_with_index do |range, index|
+          next unless range.min.nil? || range.min.to_i.zero?
+
+          policy_findings << "PodSecurityPolicy/#{policy.name} supplementalGroups.ranges[#{index}].min is #{range.min.inspect}; expected a value greater than 0"
+        end
       end
+    end
 
-      supplemental_group_ranges = policy_object.item&.spec&.supplementalGroups&.ranges
-      unless supplemental_group_ranges.nil?
-        describe "Pod security: #{policy.name}; Policy supplementalGroups range minimum" do
-          subject { supplemental_group_ranges }
-          it { should_not be_empty }
-        end
-
-        invalid_supplemental_group_ranges = supplemental_group_ranges.filter_map do |range|
-          "min=#{range.min.inspect}" if range.min.nil? || range.min.to_i.zero?
-        end
-        describe "Pod security: #{policy.name}; invalid supplementalGroups range minimums" do
-          subject { invalid_supplemental_group_ranges }
-          it { should be_empty }
-        end
+    describe 'Pod Security Policy configuration' do
+      it 'should require non-root users and non-root group ranges' do
+        expect(policy_findings).to be_empty, "Pod Security Policy findings:\n\t- #{policy_findings.join("\n\t- ")}"
       end
     end
   else

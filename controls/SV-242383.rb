@@ -71,7 +71,8 @@ If a return value is returned from the "kubectl get all" command and it is not t
   end
 
   describe 'User-managed resources in protected namespaces' do
-    subject { unexpected_resources }
-    it { should be_empty }
+    it 'should contain only the approved Kubernetes service' do
+      expect(unexpected_resources).to be_empty, "Unexpected resources in protected namespaces:\n\t- #{unexpected_resources.join("\n\t- ")}"
+    end
   end
 end
