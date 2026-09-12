@@ -62,7 +62,7 @@ An empty approved-version list leaves the authorization portion of SV-242443
 prefix and any distribution suffix. Do not copy the Kind fixture version as an
 organizational approval. Client/server version skew still needs separate
 verification. Supply all applicable components in the component list; an empty
-list is not a declaration of compliance.
+list is rejected, as are unknown component names and invalid namespaces.
 
 The profile obtains the Kubernetes server version through the API. Managed
 control planes may not expose static Pods, in which case their host-local
@@ -84,11 +84,21 @@ bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
 
 Manual-review results are expected where the STIG requires organizational
 justification, workload ownership, or interpretation of sensitive information.
-The API-only scan also defers admission/encryption configuration-file contents,
-older kubelet PodSecurity settings, and client/server skew. The sibling node
-profile does not currently automate those deferred portions; collect and
-review that evidence separately. A passing profile check or a successful test
-suite does not complete these manual assessments.
+The API-only scan delegates host-local portions to node controls SV-254800
+(admission policy), SV-274882 (encryption configuration), SV-254801 (kubelet
+PodSecurity), and SV-242443 (client/server skew). Run those on each applicable
+node and retain both profiles' results: the shared IDs represent complementary
+checks. Where managed control planes expose no component Pods or node access,
+obtain equivalent provider evidence; unavailable API evidence is Not Reviewed.
+A passing profile check or test suite does not complete organizational reviews.
+
+Secret-access evidence includes namespaced and cluster-wide RBAC grants, their
+resourceNames restrictions and effective scope, and Secret references in Pods
+and workload templates, including dormant Deployments and suspended CronJobs.
+Image comparison normalizes Docker Hub aliases and implicit `latest` tags;
+explicit digests identify content regardless of tag. Other registry aliases and
+tag-only versus digest-only references remain distinct because the scan does
+not query registries to prove their equivalence.
 
 ## Lint and validate
 
@@ -98,9 +108,10 @@ bundle exec rake pre_commit_checks
 ```
 
 The vendor command replaces `vendor/`. Preserve any SAF delta output stored
-there before running it. `pre_commit_checks` runs RuboCop and Cinc Auditor
-profile validation; either failure returns a nonzero status. To run them
-individually, use `bundle exec rake lint` and `bundle exec rake inspec:check`.
+there before running it. `pre_commit_checks` runs RuboCop, the regression specs, and Cinc Auditor
+profile validation; any failure returns a nonzero status. To run them
+individually, use `bundle exec rake lint`, `bundle exec rake spec`, and
+`bundle exec rake inspec:check`.
 The latter retains its historical task name but invokes Cinc Auditor.
 
 The lint configuration is based on the RHEL 9 sibling profile, targets Ruby

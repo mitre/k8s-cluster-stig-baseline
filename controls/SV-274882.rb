@@ -1,3 +1,7 @@
+require 'kubernetes_cluster_evidence'
+require 'kubernetes_arguments'
+require 'kubernetes_cluster_inputs'
+
 control 'SV-274882' do
   title 'Kubernetes Secrets must be encrypted at rest.'
   desc 'Kubernetes Secrets may store sensitive information such as passwords, tokens, and keys. These values are stored in the etcd database used by Kubernetes unencrypted. To protect these Secrets at rest, these values must be encrypted.'
@@ -54,37 +58,31 @@ The encryption config must specify the Secret's resource and provider. Below is 
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
-  control_plane_namespace = input('control_plane_namespace')
+  control_plane_namespace = KubernetesClusterInputs.value('control_plane_namespace', input('control_plane_namespace'))
   api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
-    api_server = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
-    api_server_item = api_server.item
-    component = (api_server_item&.metadata&.labels&.to_h || {})['component']
-    [pod.name, api_server] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
+    item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
+    component = (item&.metadata&.labels&.to_h || {})['component']
+    [pod.name, item] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
   end
-  encryption_config_findings = []
-  encryption_config_findings << "No kube-apiserver static Pod is exposed in #{control_plane_namespace}" if api_server_pods.empty?
 
-  api_server_pods.each do |pod_name, api_server|
-    arguments = (api_server.item&.spec&.containers || []).flat_map do |container|
-      [container.command, container.args].flatten.compact.map(&:to_s)
+  if api_server_pods.empty?
+    describe 'API Server encryption provider configuration visibility' do
+      skip "No kube-apiserver Pod is visible in input('control_plane_namespace')=#{control_plane_namespace}. Run node control SV-274882 on each control-plane node, or obtain equivalent provider evidence for a managed control plane."
     end
-    encryption_config_files = arguments.each_with_index.filter_map do |argument, index|
-      if argument == '--encryption-provider-config'
-        arguments[index + 1]
-      elsif argument.start_with?('--encryption-provider-config=')
-        argument.split('=', 2).last
+  else
+    findings = api_server_pods.filter_map do |pod_name, item|
+      flags, error = KubernetesClusterEvidence.component_flags(item, 'kube-apiserver')
+      next "#{pod_name}: #{error}" if error
+
+      "#{pod_name}: --encryption-provider-config must name an absolute configuration-file path" unless KubernetesArguments.path?(flags['encryption-provider-config'])
+    end
+    describe 'API Server encryption provider configuration-file arguments' do
+      it 'has valid paths on the API Server containers' do
+        expect(findings).to be_empty, "Invalid API Server configuration arguments:\n- #{findings.join("\n- ")}"
       end
     end
-
-    encryption_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --encryption-provider-config" if encryption_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
-  end
-
-  describe 'Kubernetes API Server encryption provider configuration-file arguments' do
-    subject { encryption_config_findings }
-    it { should be_empty }
-  end
-
-  describe 'Encryption provider configuration-file contents' do
-    skip 'The encryption-provider configuration file is host-local; verify that it encrypts Secrets and does not list identity first with a Control Plane node scan.'
+    describe 'Encryption provider configuration-file contents' do
+      skip 'Run node control SV-274882 on every control-plane node to inspect the referenced configuration contents; obtain provider evidence where node access is unavailable.'
+    end
   end
 end

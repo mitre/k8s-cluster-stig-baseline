@@ -1,3 +1,7 @@
+require 'kubernetes_cluster_evidence'
+require 'kubernetes_arguments'
+require 'kubernetes_cluster_inputs'
+
 control 'SV-254800' do
   title 'Kubernetes must have a Pod Security Admission control file configured.'
   desc 'An admission controller intercepts and processes requests to the Kubernetes API prior to persistence of the object, but after the request is authenticated and authorized.
@@ -54,37 +58,31 @@ Best Practice: https://kubernetes.io/docs/concepts/security/pod-security-policy/
   tag cci: ['CCI-002263']
   tag nist: ['AC-16 a']
 
-  control_plane_namespace = input('control_plane_namespace')
+  control_plane_namespace = KubernetesClusterInputs.value('control_plane_namespace', input('control_plane_namespace'))
   api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
-    api_server = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
-    api_server_item = api_server.item
-    component = (api_server_item&.metadata&.labels&.to_h || {})['component']
-    [pod.name, api_server] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
+    item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
+    component = (item&.metadata&.labels&.to_h || {})['component']
+    [pod.name, item] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
   end
-  admission_config_findings = []
-  admission_config_findings << "No kube-apiserver static Pod is exposed in #{control_plane_namespace}" if api_server_pods.empty?
 
-  api_server_pods.each do |pod_name, api_server|
-    arguments = (api_server.item&.spec&.containers || []).flat_map do |container|
-      [container.command, container.args].flatten.compact.map(&:to_s)
+  if api_server_pods.empty?
+    describe 'API Server Pod Security Admission configuration visibility' do
+      skip "No kube-apiserver Pod is visible in input('control_plane_namespace')=#{control_plane_namespace}. Run node control SV-254800 on each control-plane node, or obtain equivalent provider evidence for a managed control plane."
     end
-    admission_config_files = arguments.each_with_index.filter_map do |argument, index|
-      if argument == '--admission-control-config-file'
-        arguments[index + 1]
-      elsif argument.start_with?('--admission-control-config-file=')
-        argument.split('=', 2).last
+  else
+    findings = api_server_pods.filter_map do |pod_name, item|
+      flags, error = KubernetesClusterEvidence.component_flags(item, 'kube-apiserver')
+      next "#{pod_name}: #{error}" if error
+
+      "#{pod_name}: --admission-control-config-file must name an absolute configuration-file path" unless KubernetesArguments.path?(flags['admission-control-config-file'])
+    end
+    describe 'API Server Pod Security Admission configuration-file arguments' do
+      it 'has valid paths on the API Server containers' do
+        expect(findings).to be_empty, "Invalid API Server configuration arguments:\n- #{findings.join("\n- ")}"
       end
     end
-
-    admission_config_findings << "kube-apiserver Pod #{pod_name} does not set a non-empty --admission-control-config-file" if admission_config_files.none? { |file_name| !file_name.to_s.strip.empty? }
-  end
-
-  describe 'Kubernetes API Server Pod Security Admission configuration-file arguments' do
-    subject { admission_config_findings }
-    it { should be_empty }
-  end
-
-  describe 'Pod Security Admission configuration-file contents' do
-    skip 'The API Server static-Pod configuration file is host-local; verify its PodSecurity settings with a Control Plane node scan.'
+    describe 'Pod security admission configuration-file contents' do
+      skip 'Run node control SV-254800 on every control-plane node to inspect the referenced configuration contents; obtain provider evidence where node access is unavailable.'
+    end
   end
 end

@@ -1,3 +1,6 @@
+require 'kubernetes_cluster_evidence'
+require 'kubernetes_cluster_inputs'
+
 control 'SV-254801' do
   title 'Kubernetes must enable PodSecurity admission controller on static pods and Kubelets.'
   desc 'PodSecurity admission controller is a component that validates and enforces security policies for pods running within a Kubernetes cluster. It is responsible for evaluating the security context and configuration of pods against defined policies.
@@ -50,92 +53,47 @@ systemctl daemon-reload && systemctl restart kubelet)
   tag cci: ['CCI-002263']
   tag nist: ['AC-16 a']
 
-  control_plane_namespace = input('control_plane_namespace')
-  required_components = Array(input('control_plane_static_pod_components')).map(&:to_s)
-  kubernetes_minor_version = k8sversion.minor.to_s[/\d+/].to_i
+  control_plane_namespace = KubernetesClusterInputs.value('control_plane_namespace', input('control_plane_namespace'))
+  required_components = KubernetesClusterInputs.value('control_plane_static_pod_components', input('control_plane_static_pod_components'))
+  minor_version = k8sversion.minor.to_s.to_i
+  components = minor_version < 25 ? required_components : ['kube-apiserver']
+  pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries
 
-  if kubernetes_minor_version >= 25
-    # Pod Security Admission is stable and enabled by default in Kubernetes 1.25+.
-    # The feature-gate argument is therefore not a compliance signal (and the gate
-    # is removed in newer releases). PodSecurity can still be explicitly disabled
-    # on kube-apiserver with --disable-admission-plugins.
-    api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
-      api_server = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
-      api_server_item = api_server.item
-      component = (api_server_item&.metadata&.labels&.to_h || {})['component']
-      [pod.name, api_server] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
+  components.each do |component|
+    component_pods = pods.filter_map do |pod|
+      item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
+      label = (item&.metadata&.labels&.to_h || {})['component']
+      [pod.name, item] if label == component || pod.name.to_s.start_with?("#{component}-")
+    end
+    if component_pods.empty?
+      describe "#{component} PodSecurity configuration visibility" do
+        skip "No #{component} Pod is visible in input('control_plane_namespace')=#{control_plane_namespace}; run node control SV-254801 or obtain equivalent provider evidence."
+      end
+      next
     end
 
-    if api_server_pods.empty?
-      describe 'Kubernetes API Server PodSecurity admission plugin configuration' do
-        skip "No kube-apiserver static Pod is exposed in #{control_plane_namespace}; verify that --disable-admission-plugins does not include PodSecurity with a Control Plane node scan."
-      end
-    else
-      disabled_pod_security_plugins = api_server_pods.filter_map do |pod_name, api_server|
-        arguments = (api_server.item&.spec&.containers || []).flat_map do |container|
-          [container.command, container.args].flatten.compact.map(&:to_s)
-        end
-        disabled_plugins = arguments.each_with_index.filter_map do |argument, index|
-          if argument == '--disable-admission-plugins'
-            arguments[index + 1]
-          elsif argument.start_with?('--disable-admission-plugins=')
-            argument.split('=', 2).last
-          end
-        end
-        disabled_plugins = disabled_plugins.flat_map { |plugins| plugins.to_s.split(',') }.map(&:strip)
+    findings = component_pods.filter_map do |pod_name, item|
+      flags, error = KubernetesClusterEvidence.component_flags(item, component)
+      next "#{pod_name}: #{error}" if error
 
-        pod_name if disabled_plugins.any? { |plugin| plugin.casecmp?('PodSecurity') }
-      end
-
-      describe 'Kubernetes API Server does not disable the PodSecurity admission plugin' do
-        subject { disabled_pod_security_plugins }
-        it('has no API Server static Pods that disable PodSecurity') do
-          should be_empty, "API Server static Pods that disable PodSecurity:\n\t- #{disabled_pod_security_plugins.join("\n\t- ")}"
-        end
+      if minor_version < 25
+        gates = flags['feature-gates'].to_s.split(',').map(&:strip)
+        "#{pod_name}: PodSecurity must be true" unless gates.include?('PodSecurity=true') && !gates.include?('PodSecurity=false')
+      elsif flags.key?('disable-admission-plugins')
+        disabled = flags['disable-admission-plugins']
+        "#{pod_name}: invalid argument or PodSecurity explicitly disabled" if disabled.to_s.empty? || disabled.split(',').map(&:strip).include?('PodSecurity')
       end
     end
-  else
-    control_plane_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries
-    feature_gate_findings = required_components.each_with_object([]) do |component, findings|
-      component_pods = control_plane_pods.filter_map do |pod|
-        component_pod = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name)
-        component_pod_item = component_pod.item
-        component_label = (component_pod_item&.metadata&.labels&.to_h || {})['component']
-        [pod.name, component_pod] if component_label == component || pod.name.to_s.start_with?("#{component}-")
-      end
-
-      if component_pods.empty?
-        findings << "#{component} static Pod is not exposed in #{control_plane_namespace}"
-        next
-      end
-
-      component_pods.each do |pod_name, component_pod|
-        arguments = (component_pod.item&.spec&.containers || []).flat_map do |container|
-          [container.command, container.args].flatten.compact.map(&:to_s)
-        end
-        feature_gates = arguments.each_with_index.filter_map do |argument, index|
-          if argument == '--feature-gates'
-            arguments[index + 1]
-          elsif argument.start_with?('--feature-gates=')
-            argument.split('=', 2).last
-          end
-        end
-        pod_security_enabled = feature_gates.compact.any? do |feature_gate|
-          feature_gate.match?(/PodSecurity\s*=\s*true/i)
-        end
-        findings << "#{component} Pod #{pod_name} does not set PodSecurity=true" unless pod_security_enabled
+    describe "#{component} enables PodSecurity admission" do
+      it 'has no disabled or missing required PodSecurity settings' do
+        expect(findings).to be_empty, "PodSecurity findings:\n- #{findings.join("\n- ")}"
       end
     end
+  end
 
-    describe 'Control Plane static Pods enable the PodSecurity feature gate before Kubernetes 1.25' do
-      subject { feature_gate_findings }
-      it('has no static Pods without PodSecurity=true') do
-        should be_empty, "Static Pods missing PodSecurity=true:\n\t- #{feature_gate_findings.join("\n\t- ")}"
-      end
-    end
-
-    describe 'Kubelet PodSecurity feature-gate configuration before Kubernetes 1.25' do
-      skip 'Kubelet command-line and configuration-file settings are host-local; evaluate them with the k8s-node profile on every Control Plane and Worker Node.'
+  if minor_version < 25
+    describe 'Kubelet PodSecurity configuration before Kubernetes 1.25' do
+      skip 'Run node control SV-254801 on every control-plane and worker node to check kubelet arguments and featureGates.PodSecurity in its configuration file.'
     end
   end
 end

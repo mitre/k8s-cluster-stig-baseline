@@ -1,3 +1,5 @@
+require 'kubernetes_cluster_evidence'
+
 control 'SV-242442' do
   title 'Kubernetes must remove old components after updated versions have been
 installed.'
@@ -38,26 +40,9 @@ kubectl delete pod podname
     images.concat(containers.filter_map(&:image))
   end
 
-  # remove duplicate image references
-  images = images.flatten.uniq
-
-  # tally up versions by image name
-  image_tally = {}
-  images.each do |image|
-    image_reference, image_digest = image.split('@', 2)
-    last_slash = image_reference.rindex('/')
-    last_colon = image_reference.rindex(':')
-    has_tag = last_colon && (last_slash.nil? || last_colon > last_slash)
-    image_name = has_tag ? image_reference[0...last_colon] : image_reference
-    image_version = has_tag ? image_reference[(last_colon + 1)..] : 'latest'
-    image_version = "#{image_version}@#{image_digest}" unless image_digest.nil?
-
-    if image_tally[image_name]
-      image_tally[image_name] << image_version
-    else
-      image_tally[image_name] = [image_version]
-    end
-  end
+  # Normalize default registry, namespace, tag, and digest before deduplicating.
+  image_tally = images.map { |image| KubernetesClusterEvidence.image_identity(image) }.uniq.group_by(&:first)
+  image_tally.transform_values! { |identities| identities.map(&:last) }
 
   images_with_multiple_versions = image_tally.filter_map do |image_name, versions|
     "#{image_name}: #{versions.sort.join(', ')}" if versions.length > 1

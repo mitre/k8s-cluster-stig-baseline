@@ -41,17 +41,17 @@ If a return value is returned from the "kubectl get all" command and it is not t
   tag cci: ['CCI-000366']
   tag nist: ['CM-6 b']
 
-  approved_services = ['kubernetes']
   namespaces = ['default', 'kube-public']
   kube_node_lease_exists = k8sobjects(api: 'v1', type: 'namespaces').entries.any? do |namespace|
     namespace.name == 'kube-node-lease'
   end
   namespaces << 'kube-node-lease' if kube_node_lease_exists
 
+  cronjob_api = k8sversion.minor.to_s.to_i < 21 ? 'batch/v1beta1' : 'batch/v1'
   unexpected_resources = []
   namespaces.each do |namespace|
     k8sobjects(api: 'v1', type: 'services', namespace: namespace).entries.each do |service|
-      unexpected_resources << "Service/#{namespace}/#{service.name}" unless approved_services.include?(service.name)
+      unexpected_resources << "Service/#{namespace}/#{service.name}" unless namespace == 'default' && service.name == 'kubernetes'
     end
     {
       'v1' => { 'pods' => 'Pod', 'replicationcontrollers' => 'ReplicationController' },
@@ -60,13 +60,18 @@ If a return value is returned from the "kubectl get all" command and it is not t
         'deployments' => 'Deployment',
         'replicasets' => 'ReplicaSet',
         'statefulsets' => 'StatefulSet'
-      }
+      },
+      'batch/v1' => { 'jobs' => 'Job' },
+      'autoscaling/v1' => { 'horizontalpodautoscalers' => 'HorizontalPodAutoscaler' }
     }.each do |api, types|
       types.each do |type, kind|
         k8sobjects(api: api, type: type, namespace: namespace).entries.each do |resource|
           unexpected_resources << "#{kind}/#{namespace}/#{resource.name}"
         end
       end
+    end
+    k8sobjects(api: cronjob_api, type: 'cronjobs', namespace: namespace).entries.each do |resource|
+      unexpected_resources << "CronJob/#{namespace}/#{resource.name}"
     end
   end
 

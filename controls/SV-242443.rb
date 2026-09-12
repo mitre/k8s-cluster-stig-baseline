@@ -1,3 +1,5 @@
+require 'kubernetes_cluster_inputs'
+
 control 'SV-242443' do
   title 'Kubernetes must contain the latest updates as authorized by IAVMs,
 CTOs, DTMs, and STIGs.'
@@ -49,7 +51,7 @@ applied within the time allowed.'
   tag cci: ['CCI-002605', 'CCI-002635']
   tag nist: ['SI-2 c', 'SI-3 (10) (a)']
 
-  approved_server_versions = Array(input('approved_kubernetes_server_versions')).map(&:to_s)
+  approved_server_versions = Array(KubernetesClusterInputs.value('approved_kubernetes_server_versions', input('approved_kubernetes_server_versions'))).map(&:to_s)
 
   if approved_server_versions.empty?
     describe 'Kubernetes API Server version authorization' do
@@ -62,6 +64,6 @@ applied within the time allowed.'
   end
 
   describe 'kubectl client-to-server version skew policy' do
-    skip 'The k8s target reports the API Server version but not the local kubectl client version; verify client-to-server skew with the Control Plane node profile.'
+    skip 'The k8s target reports the API Server version but not the local kubectl client version; run node control SV-242443 on each control-plane node, assessing every API-server endpoint in an HA cluster.'
   end
 end
