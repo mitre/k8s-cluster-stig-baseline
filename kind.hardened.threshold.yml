@@ -1,0 +1,5 @@
+compliance:
+  min: 55
+error:
+  total:
+    max: 0

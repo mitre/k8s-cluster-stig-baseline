@@ -1,0 +1,148 @@
+control 'SV-242437' do
+  title 'Kubernetes must have a pod security policy set.'
+  desc 'Enabling the admissions webhook allows for Kubernetes to apply
+policies against objects that are to be created, read, updated, or deleted. By
+applying a pod security policy, control can be given to not allow images to be
+instantiated that run as the root user. If pods run as the root user, the pod
+then has root privileges to the host system and all the resources it has. An
+attacker can use this to attack the Kubernetes cluster. By implementing a
+policy that does not allow root or privileged pods, the pod users are limited
+in what the pod can do and access.'
+  desc 'check', 'Prior to version 1.21, to enforce security policiesPod Security Policies (psp) were used. Those are now deprecated and will be removed from version 1.25.
+
+Migrate from PSP to PSA:
+https://kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/
+
+Pre-version 1.25 Check:
+On the Control Plane, run the command:
+kubectl get podsecuritypolicy
+
+If there is no pod security policy configured, this is a finding.
+
+For any pod security policies listed, edit the policy with the command:
+kubectl edit podsecuritypolicy policyname
+(Note: "policyname" is the name of the policy.)
+
+Review the runAsUser, supplementalGroups and fsGroup sections of the policy.
+
+If any of these sections are missing, this is a finding.
+
+If the rule within the runAsUser section is not set to "MustRunAsNonRoot", this is a finding.
+
+If the ranges within the supplementalGroups section has min set to "0" or min is missing, this is a finding.
+
+If the ranges within the fsGroup section has a min set to "0" or the min is missing, this is a finding.'
+  desc 'fix', "From the Control Plane, save the following policy to a file called restricted.yml.
+
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+name: restricted
+annotations:
+apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default',
+seccomp.security.alpha.kubernetes.io/defaultProfileName: 'runtime/default',
+apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+spec:
+privileged: false
+# Required to prevent escalations to root.
+allowPrivilegeEscalation: false
+# This is redundant with non-root + disallow privilege escalation,
+# but we can provide it for defense in depth.
+requiredDropCapabilities:
+- ALL
+# Allow core volume types.
+volumes:
+- 'configMap'
+- 'emptyDir'
+- 'projected'
+- 'secret'
+- 'downwardAPI'
+# Assume that persistentVolumes set up by the cluster admin are safe to use.
+- 'persistentVolumeClaim'
+hostNetwork: false
+hostIPC: false
+hostPID: false
+runAsUser:
+# Require the container to run without root privileges.
+rule: 'MustRunAsNonRoot'
+seLinux:
+# This policy assumes the nodes are using AppArmor rather than SELinux.
+rule: 'RunAsAny'
+supplementalGroups:
+rule: 'MustRunAs'
+ranges:
+# Forbid adding the root group.
+- min: 1
+max: 65535
+fsGroup:
+rule: 'MustRunAs'
+ranges:
+# Forbid adding the root group.
+- min: 1
+max: 65535
+readOnlyRootFilesystem: false
+
+To implement the policy, run the command:
+kubectl create -f restricted.yml"
+  impact 0.7
+  tag severity: 'high'
+  tag gtitle: 'SRG-APP-000342-CTR-000775'
+  tag gid: 'V-242437'
+  tag rid: 'SV-242437r961359_rule'
+  tag stig_id: 'CNTR-K8-002010'
+  tag fix_id: 'F-45670r863900_fix'
+  tag cci: ['CCI-002233', 'CCI-002263']
+  tag nist: ['AC-6 (8)', 'AC-16 a']
+
+  kubernetes_minor_version = k8sversion.minor.to_s[/\d+/].to_i
+
+  if kubernetes_minor_version < 25
+    pod_security_policies = k8sobjects(api: 'policy/v1beta1', type: 'podsecuritypolicies')
+    policy_findings = []
+
+    describe 'Pod Security Policies' do
+      subject { pod_security_policies }
+      it { should exist }
+    end
+
+    pod_security_policies.entries.each do |policy|
+      policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
+      policy_spec = policy_object.item&.spec
+      run_as_user_rule = policy_spec&.runAsUser&.rule
+      policy_findings << "PodSecurityPolicy/#{policy.name} runAsUser.rule is #{run_as_user_rule.inspect}; expected 'MustRunAsNonRoot'" unless run_as_user_rule == 'MustRunAsNonRoot'
+
+      fs_group_ranges = policy_spec&.fsGroup&.ranges
+      if fs_group_ranges.nil? || fs_group_ranges.empty?
+        policy_findings << "PodSecurityPolicy/#{policy.name} must define at least one fsGroup range"
+      else
+        fs_group_ranges.each_with_index do |range, index|
+          next unless range.min.nil? || range.min.to_i.zero?
+
+          policy_findings << "PodSecurityPolicy/#{policy.name} fsGroup.ranges[#{index}].min is #{range.min.inspect}; expected a value greater than 0"
+        end
+      end
+
+      supplemental_group_ranges = policy_spec&.supplementalGroups&.ranges
+      if supplemental_group_ranges.nil? || supplemental_group_ranges.empty?
+        policy_findings << "PodSecurityPolicy/#{policy.name} must define at least one supplementalGroups range"
+      else
+        supplemental_group_ranges.each_with_index do |range, index|
+          next unless range.min.nil? || range.min.to_i.zero?
+
+          policy_findings << "PodSecurityPolicy/#{policy.name} supplementalGroups.ranges[#{index}].min is #{range.min.inspect}; expected a value greater than 0"
+        end
+      end
+    end
+
+    describe 'Pod Security Policy configuration' do
+      it 'should require non-root users and non-root group ranges' do
+        expect(policy_findings).to be_empty, "Pod Security Policy findings:\n\t- #{policy_findings.join("\n\t- ")}"
+      end
+    end
+  else
+    impact 0.0
+    describe 'PodSecurityPolicy on Kubernetes 1.25 or later' do
+      skip 'PodSecurityPolicy was removed in Kubernetes 1.25; evaluate Pod Security Admission with SV-254800 and SV-254801.'
+    end
+  end
+end
