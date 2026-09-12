@@ -1,6 +1,3 @@
-require 'kubernetes_cluster_evidence'
-require 'kubernetes_cluster_inputs'
-
 control 'SV-254801' do
   title 'Kubernetes must enable PodSecurity admission controller on static pods and Kubelets.'
   desc 'PodSecurity admission controller is a component that validates and enforces security policies for pods running within a Kubernetes cluster. It is responsible for evaluating the security context and configuration of pods against defined policies.
@@ -53,8 +50,8 @@ systemctl daemon-reload && systemctl restart kubelet)
   tag cci: ['CCI-002263']
   tag nist: ['AC-16 a']
 
-  control_plane_namespace = KubernetesClusterInputs.value('control_plane_namespace', input('control_plane_namespace'))
-  required_components = KubernetesClusterInputs.value('control_plane_static_pod_components', input('control_plane_static_pod_components'))
+  control_plane_namespace = input('control_plane_namespace')
+  required_components = input('control_plane_static_pod_components')
   minor_version = k8sversion.minor.to_s.to_i
   components = minor_version < 25 ? required_components : ['kube-apiserver']
   pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries

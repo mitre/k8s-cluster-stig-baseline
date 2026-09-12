@@ -1,7 +1,3 @@
-require 'kubernetes_cluster_evidence'
-require 'kubernetes_arguments'
-require 'kubernetes_cluster_inputs'
-
 control 'SV-274882' do
   title 'Kubernetes Secrets must be encrypted at rest.'
   desc 'Kubernetes Secrets may store sensitive information such as passwords, tokens, and keys. These values are stored in the etcd database used by Kubernetes unencrypted. To protect these Secrets at rest, these values must be encrypted.'
@@ -58,7 +54,7 @@ The encryption config must specify the Secret's resource and provider. Below is 
   tag cci: ['CCI-000213']
   tag nist: ['AC-3']
 
-  control_plane_namespace = KubernetesClusterInputs.value('control_plane_namespace', input('control_plane_namespace'))
+  control_plane_namespace = input('control_plane_namespace')
   api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
     item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
     component = (item&.metadata&.labels&.to_h || {})['component']
@@ -74,7 +70,7 @@ The encryption config must specify the Secret's resource and provider. Below is 
       flags, error = KubernetesClusterEvidence.component_flags(item, 'kube-apiserver')
       next "#{pod_name}: #{error}" if error
 
-      "#{pod_name}: --encryption-provider-config must name an absolute configuration-file path" unless KubernetesArguments.path?(flags['encryption-provider-config'])
+      "#{pod_name}: --encryption-provider-config must name an absolute configuration-file path" unless flags['encryption-provider-config'].to_s.start_with?('/')
     end
     describe 'API Server encryption provider configuration-file arguments' do
       it 'has valid paths on the API Server containers' do

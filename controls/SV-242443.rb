@@ -1,5 +1,3 @@
-require 'kubernetes_cluster_inputs'
-
 control 'SV-242443' do
   title 'Kubernetes must contain the latest updates as authorized by IAVMs,
 CTOs, DTMs, and STIGs.'
@@ -51,7 +49,7 @@ applied within the time allowed.'
   tag cci: ['CCI-002605', 'CCI-002635']
   tag nist: ['SI-2 c', 'SI-3 (10) (a)']
 
-  approved_server_versions = Array(KubernetesClusterInputs.value('approved_kubernetes_server_versions', input('approved_kubernetes_server_versions'))).map(&:to_s)
+  approved_server_versions = Array(input('approved_kubernetes_server_versions')).map(&:to_s)
 
   if approved_server_versions.empty?
     describe 'Kubernetes API Server version authorization' do

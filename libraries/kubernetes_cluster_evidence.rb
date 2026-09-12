@@ -1,5 +1,3 @@
-require 'kubernetes_arguments'
-
 # Keeps evidence tied to the component container instead of unrelated sidecars.
 module ::KubernetesClusterEvidence
   module_function
@@ -11,7 +9,7 @@ module ::KubernetesClusterEvidence
     tokens = Array(containers.first.command) + Array(containers.first.args)
     return [nil, 'Component command and args must contain only strings'] unless tokens.all? { |token| token.is_a?(String) }
 
-    [KubernetesArguments.parse(tokens), nil]
+    [parse_flags(tokens), nil]
   end
 
   def matching_containers(item, component)
@@ -20,24 +18,14 @@ module ::KubernetesClusterEvidence
     end
   end
 
-  def default_registry?(parts)
-    parts.length == 1 || (!parts.first.match?(/[.:]/) && parts.first != 'localhost')
-  end
+  def parse_flags(tokens)
+    tokens.each_with_index.each_with_object({}) do |(token, index), flags|
+      next unless token.start_with?('--')
 
-  def image_identity(image)
-    reference, digest = image.split('@', 2)
-    last_colon = reference.rindex(':')
-    tagged = last_colon && last_colon > (reference.rindex('/') || -1)
-    name = tagged ? reference[0...last_colon] : reference
-    version = digest || (tagged ? reference[(last_colon + 1)..] : 'latest')
-    [canonical_image_name(name), version]
-  end
-
-  def canonical_image_name(name)
-    parts = name.split('/')
-    parts.unshift('docker.io') if default_registry?(parts)
-    parts[0] = 'docker.io' if %w[index.docker.io registry-1.docker.io].include?(parts[0])
-    parts.insert(1, 'library') if parts[0] == 'docker.io' && parts.length == 2
-    parts.join('/')
+      name, value = token.delete_prefix('--').split('=', 2)
+      following = tokens[index + 1]
+      value ||= following if following && !following.start_with?('-')
+      flags[name] = value || ''
+    end
   end
 end

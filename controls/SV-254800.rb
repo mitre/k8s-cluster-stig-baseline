@@ -1,7 +1,3 @@
-require 'kubernetes_cluster_evidence'
-require 'kubernetes_arguments'
-require 'kubernetes_cluster_inputs'
-
 control 'SV-254800' do
   title 'Kubernetes must have a Pod Security Admission control file configured.'
   desc 'An admission controller intercepts and processes requests to the Kubernetes API prior to persistence of the object, but after the request is authenticated and authorized.
@@ -58,7 +54,7 @@ Best Practice: https://kubernetes.io/docs/concepts/security/pod-security-policy/
   tag cci: ['CCI-002263']
   tag nist: ['AC-16 a']
 
-  control_plane_namespace = KubernetesClusterInputs.value('control_plane_namespace', input('control_plane_namespace'))
+  control_plane_namespace = input('control_plane_namespace')
   api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
     item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
     component = (item&.metadata&.labels&.to_h || {})['component']
@@ -74,7 +70,7 @@ Best Practice: https://kubernetes.io/docs/concepts/security/pod-security-policy/
       flags, error = KubernetesClusterEvidence.component_flags(item, 'kube-apiserver')
       next "#{pod_name}: #{error}" if error
 
-      "#{pod_name}: --admission-control-config-file must name an absolute configuration-file path" unless KubernetesArguments.path?(flags['admission-control-config-file'])
+      "#{pod_name}: --admission-control-config-file must name an absolute configuration-file path" unless flags['admission-control-config-file'].to_s.start_with?('/')
     end
     describe 'API Server Pod Security Admission configuration-file arguments' do
       it 'has valid paths on the API Server containers' do

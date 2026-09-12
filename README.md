@@ -62,7 +62,8 @@ An empty approved-version list leaves the authorization portion of SV-242443
 prefix and any distribution suffix. Do not copy the Kind fixture version as an
 organizational approval. Client/server version skew still needs separate
 verification. Supply all applicable components in the component list; an empty
-list is rejected, as are unknown component names and invalid namespaces.
+list is rejected, as are unknown component names and blank namespaces. InSpec
+enforces the declared input types and required values.
 
 The profile obtains the Kubernetes server version through the API. Managed
 control planes may not expose static Pods, in which case their host-local
@@ -95,10 +96,16 @@ A passing profile check or test suite does not complete organizational reviews.
 Secret-access evidence includes namespaced and cluster-wide RBAC grants, their
 resourceNames restrictions and effective scope, and Secret references in Pods
 and workload templates, including dormant Deployments and suspended CronJobs.
-Image comparison normalizes Docker Hub aliases and implicit `latest` tags;
-explicit digests identify content regardless of tag. Other registry aliases and
-tag-only versus digest-only references remain distinct because the scan does
-not query registries to prove their equivalence.
+Image comparison groups references by repository as written and compares their
+tags or explicit digests. An omitted tag means `latest`; registry ports are
+preserved. Registry aliases and tag-only versus digest-only references remain
+distinct. The scan does not resolve aliases or query registries.
+
+## Profile library
+
+`kubernetes_cluster_evidence.rb` selects the actual component container and
+parses its flags. Image-version comparisons stay in their control. Cinc loads
+the library automatically; basic input checks run once in `controls/00_inputs.rb`.
 
 ## Lint and validate
 
@@ -108,15 +115,14 @@ bundle exec rake pre_commit_checks
 ```
 
 The vendor command replaces `vendor/`. Preserve any SAF delta output stored
-there before running it. `pre_commit_checks` runs RuboCop, the regression specs, and Cinc Auditor
+there before running it. `pre_commit_checks` runs RuboCop and Cinc Auditor
 profile validation; any failure returns a nonzero status. To run them
-individually, use `bundle exec rake lint`, `bundle exec rake spec`, and
-`bundle exec rake inspec:check`.
+individually, use `bundle exec rake lint` and `bundle exec rake inspec:check`.
 The latter retains its historical task name but invokes Cinc Auditor.
 
 The lint configuration is based on the RHEL 9 sibling profile, targets Ruby
-3.1, includes local resource libraries, and excludes vendored dependencies,
-generated mapped controls, and Kitchen artifacts. The lint workflow runs on
+3.1, includes local resource libraries, and excludes vendored dependencies
+and Kitchen artifacts. The lint workflow runs on
 pull requests and pushes to `main`.
 
 ## Test Kitchen Kind suites
