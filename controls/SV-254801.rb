@@ -81,7 +81,8 @@ systemctl daemon-reload && systemctl restart kubelet)
           elsif argument.start_with?('--disable-admission-plugins=')
             argument.split('=', 2).last
           end
-        end.flat_map { |plugins| plugins.to_s.split(',') }.map(&:strip)
+        end
+        disabled_plugins = disabled_plugins.flat_map { |plugins| plugins.to_s.split(',') }.map(&:strip)
 
         pod_name if disabled_plugins.any? { |plugin| plugin.casecmp?('PodSecurity') }
       end

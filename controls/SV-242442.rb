@@ -55,7 +55,7 @@ kubectl delete pod podname
     if image_tally[image_name]
       image_tally[image_name] << image_version
     else
-      image_tally[image_name] = [ image_version ]
+      image_tally[image_name] = [image_version]
     end
   end
 
