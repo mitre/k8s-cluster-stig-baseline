@@ -24,7 +24,39 @@ namespaces to user specific namespaces.'
   tag cci: ['CCI-001082']
   tag nist: ['SC-2']
 
-  describe 'Manually verify that no user pods are present in `kube-node-lease`, `kube-public`, and `kube-system` namespaces' do
-    skip 'Determining whether a workload is user-managed requires workload ownership information that is not available from the Kubernetes API.'
+  system_namespaces = %w[kube-node-lease kube-public kube-system]
+  pods = k8sobjects(api: 'v1', type: 'pods')
+  entries = pods.entries
+  pod_evidence = []
+
+  if pods.resource_failed? || pods.resource_skipped?
+    pod_evidence << "Pod inventory unavailable: #{pods.resource_exception_message}"
+  else
+    entries.select { |entry| system_namespaces.include?(entry.namespace) }.each do |entry|
+      item = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).item
+      if item.nil?
+        pod_evidence << "Pod/#{entry.namespace}/#{entry.name}: listed in the inventory, but ownership details could not be retrieved"
+        next
+      end
+
+      owners = Array(item.metadata&.ownerReferences).map do |owner|
+        "#{owner.kind}/#{owner.name}#{owner.controller ? ' (controller)' : ''}"
+      end
+      owner_summary = owners.empty? ? 'none reported' : owners.join(', ')
+      service_account = item.spec&.serviceAccountName || 'not reported'
+      node = item.spec&.nodeName || 'not scheduled'
+      pod_evidence << "Pod/#{entry.namespace}/#{entry.name}: owners=#{owner_summary}; serviceAccount=#{service_account}; node=#{node}"
+    end
+  end
+
+  if pod_evidence.empty?
+    describe 'Pods requiring ownership review in Kubernetes system namespaces' do
+      subject { pod_evidence }
+      it { should be_empty }
+    end
+  else
+    describe 'System-namespace Pod ownership and separation of user workloads' do
+      skip "Review the following inventory against documented cluster-component ownership. Owner references and service accounts do not establish organizational approval. Move any user workloads to dedicated namespaces.\n- #{pod_evidence.sort.join("\n- ")}"
+    end
   end
 end

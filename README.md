@@ -93,6 +93,13 @@ checks. Where managed control planes expose no component Pods or node access,
 obtain equivalent provider evidence; unavailable API evidence is Not Reviewed.
 A passing profile check or test suite does not complete organizational reviews.
 
+SV-242417 lists Pods in `kube-node-lease`, `kube-public`, and `kube-system`,
+including immediate owner references, service accounts, and assigned nodes.
+Review this inventory against documented cluster-component ownership; a Pod's
+name or owner reference alone does not prove it is an approved system workload.
+The result is Not Reviewed when Pods are present or inventory is unavailable,
+and passes when a successful inventory finds no Pods in those namespaces.
+
 Secret-access evidence includes namespaced and cluster-wide RBAC grants, their
 resourceNames restrictions and effective scope, and Secret references in Pods
 and workload templates, including dormant Deployments and suspended CronJobs.
