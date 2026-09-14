@@ -1,167 +1,82 @@
-# Kubernetes Cluster STIG Automated Compliance Validation Profile
+## Kubernetes Cluster STIG Automated Compliance Validation Profile
 
-This InSpec profile evaluates the cluster requirements of the DISA Kubernetes
-Security Technical Implementation Guide (STIG), **Version 2 Release 6**. Run it
-alongside the [Kubernetes Node profile](https://github.com/mitre/k8s-node-stig-baseline),
-which assesses the operating systems of control-plane and worker nodes.
+InSpec profile to validate the secure configuration of a Kubernetes cluster against [DISA's](https://public.cyber.mil/stigs/downloads/) Kubernetes Security Technical Implementation Guide (STIG) Version 2 Release 6.
 
-## Requirements and setup
+## Getting Started
 
-Use an audit runner with Git, Ruby, Bundler, and kubectl. CI uses Ruby 3.1. The
-runner needs network access to the Kubernetes API and a kubeconfig with
-permission to read the resources assessed across namespaces, including RBAC
-objects. Cluster-admin credentials provide that access; a dedicated audit role
-can be used if it grants the required reads.
+It is recommended that Cinc Auditor and this profile be run from a **runner** host, such as a DevOps orchestration server, administrative management system, or developer workstation, against the target Kubernetes API using the [train-kubernetes](https://github.com/inspec/train-kubernetes) transport.
 
-Install the Gemfile dependencies, including Cinc Auditor and the Kubernetes
-Train transport:
+The Kubernetes STIG includes requirements for both the cluster and the nodes that comprise it. This profile contains the cluster checks and is intended to be used with the [Kubernetes Node profile](https://github.com/mitre/k8s-node-stig-baseline).
+
+### Requirements
+
+#### Kubernetes Cluster
+
+- Kubernetes platform deployment
+- Access to the Kubernetes API
+- Credentials with permission to read the resources evaluated by the profile
+
+#### Required software on the runner
+
+- Git
+- Ruby and Bundler
+- kubectl
+
+### Set up the runner
+
+Install the profile dependencies, including Cinc Auditor and the Kubernetes transport:
 
 ```sh
 bundle install
 bundle exec cinc-auditor version
 ```
 
-Cinc Auditor loads `train-kubernetes` from the bundle; no global plugin
-installation or edit to a user plugin file is required. Bundler creates a local
-`Gemfile.lock`, which is not tracked by this repository. Keep it when you need
-to reproduce a local dependency resolution.
+Cinc Auditor loads `train-kubernetes` from the bundle; no global plugin installation is required.
 
-Check the kubeconfig context before scanning. Set `KUBECONFIG` if the file is
-not in the default location:
+### Profile input values
+
+Profile inputs and their defaults are defined in [inspec.yml](inspec.yml). To evaluate the Kubernetes server version against versions approved for your environment, create an `inputs.yml` file and populate the approved-version list:
+
+```yaml
+approved_kubernetes_server_versions: []
+```
+
+Replace the empty list with the exact version or versions authorized by the applicable IAVM, CTO, DTM, or STIG. If the list remains empty, the authorization portion of control SV-242443 is reported as Not Reviewed.
+
+### How to execute this profile
+
+Run these commands from the profile directory.
+
+#### Validate access to the Kubernetes API
 
 ```sh
-kubectl config current-context
 kubectl get nodes
 bundle exec cinc-auditor detect -t k8s://
 ```
 
-## Profile inputs
-
-[inspec.yml](inspec.yml) declares the inputs. Save a mapping such as the
-following to `inputs.yml` and adjust it for the target:
-
-```yaml
-# Populate from the applicable organizational authorization; no versions are
-# assumed approved by default.
-approved_kubernetes_server_versions: []
-control_plane_namespace: kube-system
-control_plane_static_pod_components:
-  - kube-apiserver
-  - kube-controller-manager
-  - kube-scheduler
-```
-
-| Input | Default | Purpose |
-|---|---|---|
-| `approved_kubernetes_server_versions` | `[]` | Exact API-server `gitVersion` strings authorized by the applicable IAVM, CTO, DTM, or STIG. |
-| `control_plane_namespace` | `kube-system` | Namespace exposing the control-plane static Pods. |
-| `control_plane_static_pod_components` | `kube-apiserver`, `kube-controller-manager`, `kube-scheduler` | Components assessed for the PodSecurity feature gate before Kubernetes 1.25. |
-
-An empty approved-version list leaves the authorization portion of SV-242443
-**Not Reviewed**. Populate it with exact authorized strings, including the `v`
-prefix and any distribution suffix. Do not copy the Kind fixture version as an
-organizational approval. Client/server version skew still needs separate
-verification. Supply all applicable components in the component list; an empty
-list is rejected, as are unknown component names and blank namespaces. InSpec
-enforces the declared input types and required values.
-
-The profile obtains the Kubernetes server version through the API. Managed
-control planes may not expose static Pods, in which case their host-local
-configuration requires evidence from the provider or another assessment path.
-
-## Run an assessment
-
-Run commands from the profile directory:
+#### Execute a single control
 
 ```sh
-# Run all controls and save results.
-bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
-  --show-progress --reporter cli json:results.json
-
-# Run one control.
 bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
   --controls SV-242383 --show-progress
 ```
 
-Manual-review results are expected where the STIG requires organizational
-justification, workload ownership, or interpretation of sensitive information.
-The API-only scan delegates host-local portions to node controls SV-254800
-(admission policy), SV-274882 (encryption configuration), SV-254801 (kubelet
-PodSecurity), and SV-242443 (client/server skew). Run those on each applicable
-node and retain both profiles' results: the shared IDs represent complementary
-checks. Where managed control planes expose no component Pods or node access,
-obtain equivalent provider evidence; unavailable API evidence is Not Reviewed.
-A passing profile check or test suite does not complete organizational reviews.
-
-SV-242417 lists Pods in `kube-node-lease`, `kube-public`, and `kube-system`,
-including immediate owner references, service accounts, and assigned nodes.
-Review this inventory against documented cluster-component ownership; a Pod's
-name or owner reference alone does not prove it is an approved system workload.
-The result is Not Reviewed when Pods are present or inventory is unavailable,
-and passes when a successful inventory finds no Pods in those namespaces.
-
-Secret-access evidence includes namespaced and cluster-wide RBAC grants, their
-resourceNames restrictions and effective scope, and Secret references in Pods
-and workload templates, including dormant Deployments and suspended CronJobs.
-Image comparison groups references by repository as written and compares their
-tags or explicit digests. An omitted tag means `latest`; registry ports are
-preserved. Registry aliases and tag-only versus digest-only references remain
-distinct. The scan does not resolve aliases or query registries.
-
-## Profile library
-
-`kubernetes_cluster_evidence.rb` selects the actual component container and
-parses its flags. Image-version comparisons stay in their control. Cinc loads
-the library automatically; basic input checks run once in `controls/00_inputs.rb`.
-
-## Lint and validate
+#### Execute all controls
 
 ```sh
-bundle exec cinc-auditor vendor . --overwrite
-bundle exec rake pre_commit_checks
+bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
+  --show-progress
 ```
 
-The vendor command replaces `vendor/`. Preserve any SAF delta output stored
-there before running it. `pre_commit_checks` runs RuboCop and Cinc Auditor
-profile validation; any failure returns a nonzero status. To run them
-individually, use `bundle exec rake lint` and `bundle exec rake inspec:check`.
-The latter retains its historical task name but invokes Cinc Auditor.
-
-The lint configuration is based on the RHEL 9 sibling profile, targets Ruby
-3.1, includes local resource libraries, and excludes vendored dependencies
-and Kitchen artifacts. The lint workflow runs on
-pull requests and pushes to `main`.
-
-## Test Kitchen Kind suites
-
-Both disposable suites require Docker Desktop (or Docker Engine), `kind`, and
-`kubectl` in addition to Ruby and Bundler. Vendor the profile as shown above,
-then run:
+#### Execute all controls and save the results as JSON
 
 ```sh
-KITCHEN_LOCAL_YAML=kitchen.kind.yml bundle exec kitchen test --destroy=always vanilla
-KITCHEN_LOCAL_YAML=kitchen.kind.yml bundle exec kitchen test --destroy=always hardened
+bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
+  --show-progress --reporter cli json:results.json
 ```
 
-`vanilla` uses the default Kind API server. `hardened` configures Pod Security
-Admission, Secrets encryption at rest, and the expected test API-server version.
-The setup generates a per-run encryption key and deletes it with the cluster.
-These are test fixtures, not a production hardening procedure.
+Omit `--input-file inputs.yml` when using the defaults from `inspec.yml`.
 
-Suite inputs are in `kind.vanilla.inputs.yml` and `kind.hardened.inputs.yml`.
-The hardened approved-version entry matches the pinned Kind image and must be
-updated when that image's API-server version changes.
+## Using Heimdall to view JSON results
 
-Validate saved results with the suite's SAF threshold:
-
-```sh
-saf validate threshold -i results/kind_vanilla.json -T kind.vanilla.threshold.yml
-saf validate threshold -i results/kind_hardened.json -T kind.hardened.threshold.yml
-```
-
-Install the MITRE SAF CLI separately to use those commands.
-
-## View assessment results
-
-Open JSON assessment results in [Heimdall Lite](https://heimdall-lite.mitre.org/)
-or upload them to an organizational [Heimdall server](https://github.com/mitre/heimdall2).
+The JSON results file can be loaded into [Heimdall Lite](https://heimdall-lite.mitre.org/) for an interactive view or uploaded to a [Heimdall server](https://github.com/mitre/heimdall2) to store and compare multiple profile runs.
