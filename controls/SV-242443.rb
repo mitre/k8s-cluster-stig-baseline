@@ -1,9 +1,7 @@
-# encoding: UTF-8
-
-control 'V-242443' do
-  title "Kubernetes must contain the latest updates as authorized by IAVMs,
-CTOs, DTMs, and STIGs."
-  desc  "Kubernetes software must stay up to date with the latest patches,
+control 'SV-242443' do
+  title 'Kubernetes must contain the latest updates as authorized by IAVMs,
+CTOs, DTMs, and STIGs.'
+  desc 'Kubernetes software must stay up to date with the latest patches,
 service packs, and hot fixes. Not updating the Kubernetes control plane will
 expose the organization to vulnerabilities.
 
@@ -31,34 +29,39 @@ IAVM process.
 install security-relevant software updates within an identified time period
 from the availability of the update. The container platform registry will
 ensure the images are current. The specific time period will be defined by an
-authoritative source (e.g., IAVM, CTOs, DTMs, and STIGs).
-  "
-  desc  'rationale', ''
-  desc  'check', "
-    Authenticate on the Kubernetes Master Node. Run the command:
+authoritative source (e.g., IAVM, CTOs, DTMs, and STIGs).'
+  desc 'check', 'Authenticate on the Kubernetes Control Plane. Run the command:
+kubectl version --short
 
-    kubectl version --short
+If kubectl version has a setting not supporting Kubernetes skew policy, this is a finding.
 
-    If kubectl version has a setting not supporting Kubernetes skew policy,
-this is a finding.
-
-    Note: Kubernetes Skew Policy can be found at:
-https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-versions
-  "
-  desc 'fix', "Upgrade Kubernetes to the supported version. Institute and
+Note: Kubernetes Skew Policy can be found at: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-versions'
+  desc 'fix', 'Upgrade Kubernetes to the supported version. Institute and
 adhere to the policies and procedures to ensure that patches are consistently
-applied within the time allowed."
+applied within the time allowed.'
   impact 0.5
   tag severity: 'medium'
   tag gtitle: 'SRG-APP-000456-CTR-001125'
   tag gid: 'V-242443'
-  tag rid: 'SV-242443r712685_rule'
+  tag rid: 'SV-242443r1137649_rule'
   tag stig_id: 'CNTR-K8-002720'
   tag fix_id: 'F-45676r712684_fix'
-  tag cci: ['CCI-002605']
-  tag nist: ['SI-2 c']
+  tag cci: ['CCI-002605', 'CCI-002635']
+  tag nist: ['SI-2 c', 'SI-3 (10) (a)']
 
-  describe k8sversion do
-    its('gitVersion') { should cmp >= input('k8s_minium_version') }
+  approved_server_versions = Array(input('approved_kubernetes_server_versions')).map(&:to_s)
+
+  if approved_server_versions.empty?
+    describe 'Kubernetes API Server version authorization' do
+      skip "input('approved_kubernetes_server_versions') is empty; load the currently authorized API server version or versions from the applicable IAVM, CTO, DTM, or STIG."
+    end
+  else
+    describe k8sversion do
+      its('gitVersion') { should be_in approved_server_versions }
+    end
+  end
+
+  describe 'kubectl client-to-server version skew policy' do
+    skip 'The k8s target reports the API Server version but not the local kubectl client version; run node control SV-242443 on each control-plane node, assessing every API-server endpoint in an HA cluster.'
   end
 end
