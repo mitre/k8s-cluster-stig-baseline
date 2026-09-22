@@ -37,7 +37,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@e5517072e87f198d9533967ae13d97c11b604005 # v1.99.0
         with:
-          ruby-version: '3.1'
+          ruby-version: '3.4'
 
       - name: Install profile dependencies
         run: |
@@ -79,7 +79,7 @@ jobs:
         continue-on-error: true
         id: generate-summary
         run: |
-          cat results/kind_${{ matrix.suite }}-data.json | python markdown-summary.py > results/kind_${{ matrix.suite }}-markdown-summary.md
+          python markdown-summary.py < results/kind_${{ matrix.suite }}-data.json > results/kind_${{ matrix.suite }}-markdown-summary.md
           cat results/kind_${{ matrix.suite }}-markdown-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Validate scan threshold
@@ -112,3 +112,7 @@ jobs:
       - name: Remove Kind resources
         if: always()
         run: bundle exec kitchen destroy ${{ matrix.suite }} || true
+
+      - name: Confirm Kitchen completed
+        if: always() && steps.kitchen.outcome != 'success'
+        run: exit 1
