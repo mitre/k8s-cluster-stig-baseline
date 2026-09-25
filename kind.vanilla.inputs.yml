@@ -1,0 +1,10 @@
+---
+# CI uses this suite to exercise the profile against a disposable Kind cluster.
+# Set approved_kubernetes_server_versions when an authoritative update source
+# identifies the exact API Server version or versions permitted for this test.
+approved_kubernetes_server_versions: []
+control_plane_namespace: kube-system
+control_plane_static_pod_components:
+  - kube-apiserver
+  - kube-controller-manager
+  - kube-scheduler
