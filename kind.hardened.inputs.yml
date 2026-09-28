@@ -1,0 +1,10 @@
+---
+# CI hardened Kind suite. The image is pinned in provisioning/kind/create.sh;
+# update this input whenever KIND_NODE_IMAGE changes to a different API version.
+approved_kubernetes_server_versions:
+  - v1.32.2
+control_plane_namespace: kube-system
+control_plane_static_pod_components:
+  - kube-apiserver
+  - kube-controller-manager
+  - kube-scheduler

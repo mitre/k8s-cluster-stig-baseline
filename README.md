@@ -1,97 +1,82 @@
 ## Kubernetes Cluster STIG Automated Compliance Validation Profile
 
-InSpec profile to validate the secure configuration of a Kubernetes cluster against [DISA's](https://public.cyber.mil/stigs/downloads/) Kubernetes Secure Technical Implementation Guide (STIG) Version 1 Release 1.
-
-## Getting Started  
-It is intended and recommended that InSpec and this profile be run from a __"runner"__ host (such as a DevOps orchestration server, an administrative management system, or a developer's workstation/laptop) against the target remotely using the [train-kubernetes plugin](https://github.com/inspec/train-kubernetes) transport (details below).
-
-__For the best security of the runner, always install on the runner the _latest version_ of InSpec and supporting Ruby language components.__
-
-Latest versions and installation options are available at the [InSpec](http://inspec.io/) site.
-
-The Kubernetes STIG includes security requirements for both the Kubernetes cluster itself and the nodes that comprise it. This profile includes the checks for the cluster portion. It is intended  to be used in conjunction with the <b>[Kubernetes Node](https://github.com/mitre/k8s-node-stig-baseline)</b> profile that performs automated compliance checks of the Kubernetes nodes.
+InSpec profile to validate the secure configuration of a Kubernetes cluster against [DISA's](https://public.cyber.mil/stigs/downloads/) Kubernetes Security Technical Implementation Guide (STIG) Version 2 Release 6.
 
 ## Getting Started
+
+It is recommended that Cinc Auditor and this profile be run from a **runner** host, such as a DevOps orchestration server, administrative management system, or developer workstation, against the target Kubernetes API using the [train-kubernetes](https://github.com/inspec/train-kubernetes) transport.
+
+The Kubernetes STIG includes requirements for both the cluster and the nodes that comprise it. This profile contains the cluster checks and is intended to be used with the [Kubernetes Node profile](https://github.com/mitre/k8s-node-stig-baseline).
 
 ### Requirements
 
 #### Kubernetes Cluster
-- Kubernetes Platform deployment
-- Access to the Kubernetes Cluster API
-- Kubernetes Cluster Admin credentials cached on the runner.
 
+- Kubernetes platform deployment
+- Access to the Kubernetes API
+- Credentials with permission to read the resources evaluated by the profile
 
-#### Required software on the InSpec Runner
-- git
-- [InSpec](https://www.chef.io/products/chef-inspec/)
+#### Required software on the runner
 
-### Setup Environment on the InSpec Runner
-#### Install InSpec
-Goto https://www.inspec.io/downloads/ and consult the documentation for your Operating System to download and install InSpec.
+- Git
+- Ruby and Bundler
+- kubectl
 
+### Set up the runner
 
-#### Ensure InSpec version is at least 4.23.10 
-```sh
-inspec --version
-```
-
-#### Install InSpec Kubernetes Train
-Kubernetes Train allows InSpec to send request over Kubernetes API to inspect the Kubernetes Cluster.
+Install the profile dependencies, including Cinc Auditor and the Kubernetes transport:
 
 ```sh
-# Use one of the two following approaches for installing train-kubernetes.
-
-# if InSpec was installed as a gem, use the system gem binary to install train-kubernetes.
-# to check, compare `which inspec` to $GEM_HOME, if they match use
-gem install train-kubernetes -v 0.1.6
-
-# if InSpec was installed as a package, use the embedded gem binary to install train-kubernetes.
-# to check, compare `which inspec` to $GEM_HOME, if they do not match or if $GEM_HOME is null use
-sudo /opt/inspec/embedded/bin/gem install train-kubernetes -v 0.1.6
-
-# Import gem as InSpec plugin
-inspec plugin install train-kubernetes
-
-#If it has the version set to "= 0.1.6", modify it to "0.1.6" and save the file.
-vi ~/.inspec/plugins.json
-
-# Run the following command to confirm train-kubernetes is installed
-inspec plugin list
+bundle install
+bundle exec cinc-auditor version
 ```
-### How to execute this instance  
-(See: https://www.inspec.io/docs/reference/cli/)
 
-#### Validate access to Kubernetes API
+Cinc Auditor loads `train-kubernetes` from the bundle; no global plugin installation is required.
+
+### Profile input values
+
+Profile inputs and their defaults are defined in [inspec.yml](inspec.yml). To evaluate the Kubernetes server version against versions approved for your environment, create an `inputs.yml` file and populate the approved-version list:
+
+```yaml
+approved_kubernetes_server_versions: []
+```
+
+Replace the empty list with the exact version or versions authorized by the applicable IAVM, CTO, DTM, or STIG. If the list remains empty, the authorization portion of control SV-242443 is reported as Not Reviewed.
+
+### How to execute this profile
+
+Run these commands from the profile directory.
+
+#### Validate access to the Kubernetes API
+
 ```sh
 kubectl get nodes
-
-# Upon success try the following command to validate InSpec can reach the cluster API
-inspec detect -t k8s://
+bundle exec cinc-auditor detect -t k8s://
 ```
 
-#### Execute a single Control in the Profile 
-**Note**: Replace the profile's directory name - e.g. - `<Profile>` with `.` if currently in the profile's root directory.
+#### Execute a single control
 
 ```sh
-inspec exec <Profile> -t k8s:// --controls=<control_id> <control_id> --show-progress
+bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
+  --controls SV-242383 --show-progress
 ```
 
-#### Execute a Single Control and save results as JSON 
+#### Execute all controls
+
 ```sh
-inspec exec <Profile> -t k8s:// --controls=<control_id> <control_id> --show-progress --reporter json:results.json
+bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
+  --show-progress
 ```
 
-#### Execute All Controls in the Profile 
+#### Execute all controls and save the results as JSON
+
 ```sh
-inspec exec <Profile> -t k8s:// --show-progress
+bundle exec cinc-auditor exec . -t k8s:// --input-file inputs.yml \
+  --show-progress --reporter cli json:results.json
 ```
 
-#### Execute all the Controls in the Profile and save results as JSON 
-```sh
-inspec exec <Profile> -t k8s:// --show-progress  --reporter json:results.json
-```
-## Using Heimdall for Viewing the JSON Results
+Omit `--input-file inputs.yml` when using the defaults from `inspec.yml`.
 
-The JSON results output file can be loaded into __[heimdall-lite](https://heimdall-lite.mitre.org/)__ for a user-interactive, graphical view of the InSpec results. 
+## Using Heimdall to view JSON results
 
-The JSON InSpec results file may also be loaded into a __[full heimdall server](https://github.com/mitre/heimdall2)__, allowing for additional functionality such as to store and compare multiple profile runs.
+The JSON results file can be loaded into [Heimdall Lite](https://heimdall-lite.mitre.org/) for an interactive view or uploaded to a [Heimdall server](https://github.com/mitre/heimdall2) to store and compare multiple profile runs.
