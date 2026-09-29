@@ -57,11 +57,7 @@ systemctl daemon-reload && systemctl restart kubelet)
   pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries
 
   components.each do |component|
-    component_pods = pods.filter_map do |pod|
-      item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
-      label = (item&.metadata&.labels&.to_h || {})['component']
-      [pod.name, item] if label == component || pod.name.to_s.start_with?("#{component}-")
-    end
+    component_pods = KubernetesClusterEvidence.component_pods(pods, component)
     if component_pods.empty?
       describe "#{component} PodSecurity configuration visibility" do
         skip "No #{component} Pod is visible in input('control_plane_namespace')=#{control_plane_namespace}; run node control SV-254801 or obtain equivalent provider evidence."
@@ -69,8 +65,9 @@ systemctl daemon-reload && systemctl restart kubelet)
       next
     end
 
-    findings = component_pods.filter_map do |pod_name, item|
-      flags, error = KubernetesClusterEvidence.component_flags(item, component)
+    findings = component_pods.filter_map do |pod|
+      pod_name = pod[:name]
+      flags, error = KubernetesClusterEvidence.component_flags(pod, component)
       next "#{pod_name}: #{error}" if error
 
       if minor_version < 25

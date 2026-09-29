@@ -36,24 +36,19 @@ pod port or reconfigure the image to use non-privileged ports.'
 
   privileged_host_ports = []
 
-  # List pods not in system namespaces
-  k8sobjects(api: 'v1', type: 'pods').where { namespace != 'kube-system' && namespace != 'kube-node-lease' && namespace != 'kube-public' }.entries.each do |entry|
-    pod = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace)
-    pod_spec = pod.item&.spec
-    containers = [pod_spec&.containers, pod_spec&.initContainers, pod_spec&.ephemeralContainers].flat_map do |container_group|
-      Array(container_group)
-    end
+  system_namespaces = %w[kube-system kube-node-lease kube-public]
+  # One LIST; pods outside the system namespaces are selected in Ruby.
+  k8sobjects(api: 'v1', type: 'pods').entries.each do |pod|
+    next if system_namespaces.include?(pod[:namespace].to_s)
 
     # Inspect regular, init, and ephemeral containers in each pod.
-    containers.each do |container|
+    KubernetesClusterEvidence.all_containers(pod).each do |container|
       # Inspect any port mapped on each container
-      next if container.ports.nil? || container.ports.empty?
+      Array(container[:ports]).each do |port|
+        next if port[:hostPort].nil?
+        next if port[:hostPort].to_i >= 1024
 
-      container.ports.each do |port|
-        next if port.hostPort.nil?
-        next if port.hostPort.to_i >= 1024
-
-        privileged_host_ports << "Pod/#{entry.namespace}/#{entry.name} container #{container.name} maps privileged hostPort #{port.hostPort}"
+        privileged_host_ports << "Pod/#{pod[:namespace]}/#{pod[:name]} container #{container[:name]} maps privileged hostPort #{port[:hostPort]}"
       end
     end
   end

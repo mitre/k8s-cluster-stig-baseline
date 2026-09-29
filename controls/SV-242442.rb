@@ -29,13 +29,8 @@ kubectl delete pod podname
   tag nist: ['SI-2 (6)']
 
   images = []
-  k8sobjects(api: 'v1', type: 'pods').entries.each do |entry|
-    pod = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace)
-    pod_spec = pod.item&.spec
-    containers = [pod_spec&.containers, pod_spec&.initContainers, pod_spec&.ephemeralContainers].flat_map do |container_group|
-      Array(container_group)
-    end
-    images.concat(containers.filter_map(&:image))
+  k8sobjects(api: 'v1', type: 'pods').entries.each do |pod|
+    images.concat(KubernetesClusterEvidence.all_containers(pod).filter_map { |container| container[:image] })
   end
 
   # Compare versions within each repository as written; do not resolve registry aliases.
