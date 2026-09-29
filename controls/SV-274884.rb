@@ -36,52 +36,43 @@ If Secrets are attached to applications without a documented requirement, this i
   end
 
   secret_read_roles = {}
-  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'clusterroles').entries.each do |role_entry|
-    role = k8sobject(api: 'rbac.authorization.k8s.io/v1', type: 'clusterroles', name: role_entry.name).item
-    secret_read_roles["ClusterRole/#{role_entry.name}"] = secret_read_role.call(role) if role
+  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'clusterroles').entries.each do |role|
+    secret_read_roles["ClusterRole/#{role[:name]}"] = secret_read_role.call(role)
   end
-  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'roles').entries.each do |role_entry|
-    role = k8sobject(api: 'rbac.authorization.k8s.io/v1', type: 'roles', namespace: role_entry.namespace, name: role_entry.name).item
-    secret_read_roles["Role/#{role_entry.namespace}/#{role_entry.name}"] = secret_read_role.call(role) if role
+  k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: 'roles').entries.each do |role|
+    secret_read_roles["Role/#{role[:namespace]}/#{role[:name]}"] = secret_read_role.call(role)
   end
 
   role_reference = lambda do |binding|
-    role_ref = binding.roleRef
-    next nil if role_ref.nil? || role_ref.kind.to_s.empty? || role_ref.name.to_s.empty?
+    role_ref = binding[:roleRef]
+    next nil if role_ref.nil? || role_ref[:kind].to_s.empty? || role_ref[:name].to_s.empty?
 
-    case role_ref.kind
+    case role_ref[:kind]
     when 'ClusterRole'
-      "ClusterRole/#{role_ref.name}"
+      "ClusterRole/#{role_ref[:name]}"
     when 'Role'
-      "Role/#{binding.metadata.namespace}/#{role_ref.name}"
+      "Role/#{binding[:namespace]}/#{role_ref[:name]}"
     end
   end
   binding_subjects = lambda do |binding|
-    Array(binding.subjects).map do |subject|
-      subject_namespace = subject.namespace.to_s
-      subject_namespace = binding.metadata.namespace.to_s if subject.kind == 'ServiceAccount' && subject_namespace.empty?
-      [subject.kind, subject_namespace, subject.name].compact.map(&:to_s).reject(&:empty?).join('/')
+    Array(binding[:subjects]).map do |subject|
+      subject_namespace = subject[:namespace].to_s
+      subject_namespace = binding[:namespace].to_s if subject[:kind] == 'ServiceAccount' && subject_namespace.empty?
+      [subject[:kind], subject_namespace, subject[:name]].compact.map(&:to_s).reject(&:empty?).join('/')
     end
   end
   secret_read_bindings = []
   binding_types = { 'rolebindings' => 'RoleBinding', 'clusterrolebindings' => 'ClusterRoleBinding' }
   binding_types.each do |binding_type, binding_kind|
-    k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: binding_type).entries.each do |binding_entry|
-      binding = k8sobject(
-        api: 'rbac.authorization.k8s.io/v1',
-        type: binding_type,
-        namespace: binding_type == 'rolebindings' ? binding_entry.namespace : nil,
-        name: binding_entry.name
-      ).item
-      next if binding.nil?
-
+    k8sobjects(api: 'rbac.authorization.k8s.io/v1', type: binding_type).entries.each do |binding|
+      binding_entry = binding
       referenced_role = role_reference.call(binding)
       permissions = secret_read_roles.fetch(referenced_role, [])
       next if permissions.empty?
 
       subjects = binding_subjects.call(binding)
-      binding_location = binding_type == 'rolebindings' ? "#{binding_entry.namespace}/#{binding_entry.name}" : binding_entry.name
-      scope = binding_type == 'rolebindings' ? "namespace #{binding_entry.namespace}" : 'all namespaces'
+      binding_location = binding_type == 'rolebindings' ? "#{binding_entry[:namespace]}/#{binding_entry[:name]}" : binding_entry[:name]
+      scope = binding_type == 'rolebindings' ? "namespace #{binding_entry[:namespace]}" : 'all namespaces'
       secret_read_bindings << "#{binding_kind}/#{binding_location} grants #{referenced_role} to #{subjects.empty? ? 'no subjects' : subjects.join(', ')} (scope: #{scope}; #{permissions.join('; ')})"
     end
   end
@@ -96,40 +87,39 @@ If Secrets are attached to applications without a documented requirement, this i
   ]
   workload_types.each do |api, type|
     k8sobjects(api: api, type: type).entries.each do |entry|
-      workload = k8sobject(api: api, type: type, name: entry.name, namespace: entry.namespace).item
       pod_spec = case type
-                 when 'pods' then workload&.spec
-                 when 'cronjobs' then workload&.spec&.jobTemplate&.spec&.template&.spec
-                 else workload&.spec&.template&.spec
+                 when 'pods' then entry[:spec]
+                 when 'cronjobs' then entry.dig(:spec, :jobTemplate, :spec, :template, :spec)
+                 else entry.dig(:spec, :template, :spec)
                  end
       if pod_spec.nil?
-        workload_secret_references << "#{type}/#{entry.namespace}/#{entry.name}: Pod specification unavailable; inspect Secret references manually"
+        workload_secret_references << "#{type}/#{entry[:namespace]}/#{entry[:name]}: Pod specification unavailable; inspect Secret references manually"
         next
       end
-      containers = [pod_spec&.containers, pod_spec&.initContainers, pod_spec&.ephemeralContainers].flat_map { |group| Array(group) }
+      containers = KubernetesClusterEvidence.all_containers({ spec: pod_spec })
 
       containers.each do |container|
-        Array(container.env).each do |environment_variable|
-          secret_name = environment_variable.valueFrom&.secretKeyRef&.name
-          workload_secret_references << "#{type}/#{entry.namespace}/#{entry.name} container #{container.name} environment variable #{environment_variable.name} references Secret/#{secret_name}" unless secret_name.to_s.empty?
+        Array(container[:env]).each do |environment_variable|
+          secret_name = environment_variable.dig(:valueFrom, :secretKeyRef, :name)
+          workload_secret_references << "#{type}/#{entry[:namespace]}/#{entry[:name]} container #{container[:name]} environment variable #{environment_variable[:name]} references Secret/#{secret_name}" unless secret_name.to_s.empty?
         end
-        Array(container.envFrom).each do |environment_source|
-          secret_name = environment_source.secretRef&.name
-          workload_secret_references << "#{type}/#{entry.namespace}/#{entry.name} container #{container.name} envFrom references Secret/#{secret_name}" unless secret_name.to_s.empty?
-        end
-      end
-
-      Array(pod_spec&.volumes).each do |volume|
-        secret_name = volume.secret&.secretName
-        workload_secret_references << "#{type}/#{entry.namespace}/#{entry.name} volume #{volume.name} references Secret/#{secret_name}" unless secret_name.to_s.empty?
-        Array(volume.projected&.sources).each do |source|
-          secret_name = source.secret&.name
-          workload_secret_references << "#{type}/#{entry.namespace}/#{entry.name} projected volume #{volume.name} references Secret/#{secret_name}" unless secret_name.to_s.empty?
+        Array(container[:envFrom]).each do |environment_source|
+          secret_name = environment_source.dig(:secretRef, :name)
+          workload_secret_references << "#{type}/#{entry[:namespace]}/#{entry[:name]} container #{container[:name]} envFrom references Secret/#{secret_name}" unless secret_name.to_s.empty?
         end
       end
 
-      Array(pod_spec&.imagePullSecrets).each do |secret|
-        workload_secret_references << "#{type}/#{entry.namespace}/#{entry.name} imagePullSecrets references Secret/#{secret.name}" unless secret.name.to_s.empty?
+      Array(pod_spec&.dig(:volumes)).each do |volume|
+        secret_name = volume.dig(:secret, :secretName)
+        workload_secret_references << "#{type}/#{entry[:namespace]}/#{entry[:name]} volume #{volume[:name]} references Secret/#{secret_name}" unless secret_name.to_s.empty?
+        Array(volume.dig(:projected, :sources)).each do |source|
+          secret_name = source.dig(:secret, :name)
+          workload_secret_references << "#{type}/#{entry[:namespace]}/#{entry[:name]} projected volume #{volume[:name]} references Secret/#{secret_name}" unless secret_name.to_s.empty?
+        end
+      end
+
+      Array(pod_spec&.dig(:imagePullSecrets)).each do |secret|
+        workload_secret_references << "#{type}/#{entry[:namespace]}/#{entry[:name]} imagePullSecrets references Secret/#{secret[:name]}" unless secret[:name].to_s.empty?
       end
     end
   end

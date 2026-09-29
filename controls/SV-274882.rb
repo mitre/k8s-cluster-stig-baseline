@@ -55,19 +55,18 @@ The encryption config must specify the Secret's resource and provider. Below is 
   tag nist: ['AC-3']
 
   control_plane_namespace = input('control_plane_namespace')
-  api_server_pods = k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries.filter_map do |pod|
-    item = k8sobject(api: 'v1', type: 'pods', namespace: control_plane_namespace, name: pod.name).item
-    component = (item&.metadata&.labels&.to_h || {})['component']
-    [pod.name, item] if component == 'kube-apiserver' || pod.name.to_s.start_with?('kube-apiserver-')
-  end
+  api_server_pods = KubernetesClusterEvidence.api_server_pods(
+    k8sobjects(api: 'v1', type: 'pods', namespace: control_plane_namespace).entries
+  )
 
   if api_server_pods.empty?
     describe 'API Server encryption provider configuration visibility' do
       skip "No kube-apiserver Pod is visible in input('control_plane_namespace')=#{control_plane_namespace}. Run node control SV-274882 on each control-plane node, or obtain equivalent provider evidence for a managed control plane."
     end
   else
-    findings = api_server_pods.filter_map do |pod_name, item|
-      flags, error = KubernetesClusterEvidence.component_flags(item, 'kube-apiserver')
+    findings = api_server_pods.filter_map do |pod|
+      pod_name = pod[:name]
+      flags, error = KubernetesClusterEvidence.component_flags(pod, 'kube-apiserver')
       next "#{pod_name}: #{error}" if error
 
       "#{pod_name}: --encryption-provider-config must name an absolute configuration-file path" unless flags['encryption-provider-config'].to_s.start_with?('/')

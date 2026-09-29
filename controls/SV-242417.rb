@@ -32,20 +32,16 @@ namespaces to user specific namespaces.'
   if pods.resource_failed? || pods.resource_skipped?
     pod_evidence << "Pod inventory unavailable: #{pods.resource_exception_message}"
   else
-    entries.select { |entry| system_namespaces.include?(entry.namespace) }.each do |entry|
-      item = k8sobject(api: 'v1', type: 'pods', name: entry.name, namespace: entry.namespace).item
-      if item.nil?
-        pod_evidence << "Pod/#{entry.namespace}/#{entry.name}: listed in the inventory, but ownership details could not be retrieved"
-        next
-      end
-
-      owners = Array(item.metadata&.ownerReferences).map do |owner|
-        "#{owner.kind}/#{owner.name}#{owner.controller ? ' (controller)' : ''}"
+    entries.select { |pod| system_namespaces.include?(pod[:namespace].to_s) }.each do |pod|
+      # ownerReferences is optional, so it is read from the record rather than a
+      # FilterTable column: the schema is derived from the first record alone.
+      owners = Array(pod.dig(:metadata, :ownerReferences)).map do |owner|
+        "#{owner[:kind]}/#{owner[:name]}#{owner[:controller] ? ' (controller)' : ''}"
       end
       owner_summary = owners.empty? ? 'none reported' : owners.join(', ')
-      service_account = item.spec&.serviceAccountName || 'not reported'
-      node = item.spec&.nodeName || 'not scheduled'
-      pod_evidence << "Pod/#{entry.namespace}/#{entry.name}: owners=#{owner_summary}; serviceAccount=#{service_account}; node=#{node}"
+      service_account = pod.dig(:spec, :serviceAccountName) || 'not reported'
+      node = pod.dig(:spec, :nodeName) || 'not scheduled'
+      pod_evidence << "Pod/#{pod[:namespace]}/#{pod[:name]}: owners=#{owner_summary}; serviceAccount=#{service_account}; node=#{node}"
     end
   end
 

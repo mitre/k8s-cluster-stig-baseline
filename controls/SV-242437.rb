@@ -106,30 +106,30 @@ kubectl create -f restricted.yml"
     end
 
     pod_security_policies.entries.each do |policy|
-      policy_object = k8sobject(api: 'policy/v1beta1', type: 'podsecuritypolicies', name: policy.name)
-      policy_spec = policy_object.item&.spec
-      run_as_user_rule = policy_spec&.runAsUser&.rule
-      policy_findings << "PodSecurityPolicy/#{policy.name} runAsUser.rule is #{run_as_user_rule.inspect}; expected 'MustRunAsNonRoot'" unless run_as_user_rule == 'MustRunAsNonRoot'
+      policy_name = policy[:name]
+      policy_spec = policy[:spec]
+      run_as_user_rule = policy_spec&.dig(:runAsUser, :rule)
+      policy_findings << "PodSecurityPolicy/#{policy_name} runAsUser.rule is #{run_as_user_rule.inspect}; expected 'MustRunAsNonRoot'" unless run_as_user_rule == 'MustRunAsNonRoot'
 
-      fs_group_ranges = policy_spec&.fsGroup&.ranges
+      fs_group_ranges = policy_spec&.dig(:fsGroup, :ranges)
       if fs_group_ranges.nil? || fs_group_ranges.empty?
-        policy_findings << "PodSecurityPolicy/#{policy.name} must define at least one fsGroup range"
+        policy_findings << "PodSecurityPolicy/#{policy_name} must define at least one fsGroup range"
       else
         fs_group_ranges.each_with_index do |range, index|
-          next unless range.min.nil? || range.min.to_i.zero?
+          next unless range[:min].nil? || range[:min].to_i.zero?
 
-          policy_findings << "PodSecurityPolicy/#{policy.name} fsGroup.ranges[#{index}].min is #{range.min.inspect}; expected a value greater than 0"
+          policy_findings << "PodSecurityPolicy/#{policy_name} fsGroup.ranges[#{index}].min is #{range[:min].inspect}; expected a value greater than 0"
         end
       end
 
-      supplemental_group_ranges = policy_spec&.supplementalGroups&.ranges
+      supplemental_group_ranges = policy_spec&.dig(:supplementalGroups, :ranges)
       if supplemental_group_ranges.nil? || supplemental_group_ranges.empty?
-        policy_findings << "PodSecurityPolicy/#{policy.name} must define at least one supplementalGroups range"
+        policy_findings << "PodSecurityPolicy/#{policy_name} must define at least one supplementalGroups range"
       else
         supplemental_group_ranges.each_with_index do |range, index|
-          next unless range.min.nil? || range.min.to_i.zero?
+          next unless range[:min].nil? || range[:min].to_i.zero?
 
-          policy_findings << "PodSecurityPolicy/#{policy.name} supplementalGroups.ranges[#{index}].min is #{range.min.inspect}; expected a value greater than 0"
+          policy_findings << "PodSecurityPolicy/#{policy_name} supplementalGroups.ranges[#{index}].min is #{range[:min].inspect}; expected a value greater than 0"
         end
       end
     end
