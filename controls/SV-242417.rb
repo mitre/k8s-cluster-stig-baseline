@@ -50,7 +50,7 @@ namespaces to user specific namespaces.'
   end
 
   if pod_evidence.empty?
-    describe 'Pods requiring ownership review in Kubernetes system namespaces' do
+    describe 'The list of pods requiring ownership review in Kubernetes system namespaces' do
       subject { pod_evidence }
       it { should be_empty }
     end

@@ -54,7 +54,7 @@ kubectl delete pod podname
     "#{image_name}: #{versions.sort.join(', ')}" if versions.length > 1
   end
 
-  describe 'Container images running with multiple versions' do
+  describe 'The list of container images running with multiple versions' do
     it 'should be empty' do
       expect(images_with_multiple_versions).to be_empty, "Container images with multiple running versions:\n\t- #{images_with_multiple_versions.join("\n\t- ")}"
     end

@@ -135,7 +135,7 @@ If Secrets are attached to applications without a documented requirement, this i
   end
 
   if secret_read_bindings.empty? && workload_secret_references.empty?
-    describe 'Secret-read RBAC bindings and workload Secret references' do
+    describe 'The list of Secret-read RBAC bindings and workload Secret references' do
       subject { secret_read_bindings + workload_secret_references }
       it { should be_empty }
     end
