@@ -116,7 +116,7 @@ a password vault.'
     end
   end
 
-  describe 'Pods that expose Kubernetes Secrets as environment variables' do
+  describe 'The list of pods that expose Kubernetes Secrets as environment variables' do
     it 'should be empty' do
       expect(secret_environment_variables).to be_empty, "Secret-backed environment variables found:\n\t- #{secret_environment_variables.join("\n\t- ")}"
     end
